@@ -23,6 +23,7 @@ pub trait Compiler {
     ) -> WaResult<()>;
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum Comparision {
     AC,
     PE,

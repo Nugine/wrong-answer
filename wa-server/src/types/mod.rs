@@ -9,6 +9,7 @@ pub use self::unit::*;
 pub use wa_monitor::Target;
 pub use wa_monitor::TargetStatus;
 
+#[derive(Debug)]
 pub enum WaError {
     Io(std::io::Error),
     Compiler(String),
