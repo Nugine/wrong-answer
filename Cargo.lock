@@ -280,6 +280,9 @@ dependencies = [
 [[package]]
 name = "wa-server"
 version = "0.1.0"
+dependencies = [
+ "wa-monitor 0.1.0",
+]
 
 [[package]]
 name = "winapi"

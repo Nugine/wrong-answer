@@ -31,7 +31,7 @@ unsafe fn get_errno() -> c_int {
 }
 
 #[derive(Debug)]
-enum WaErrorKind {
+pub enum MonitorErrorKind {
     PipeError = 2,
     ForkError = 3,
     PipeReadError = 4,
@@ -74,12 +74,12 @@ impl Target {
         let (rx_fd, tx_fd) = {
             let mut fds: [c_int; 2] = [0; 2];
             let ret = libc::pipe(fds.as_mut_ptr());
-            check_os_error!(ret, WaErrorKind::PipeError);
+            check_os_error!(ret, MonitorErrorKind::PipeError);
             (fds[0], fds[1])
         };
 
         let ret = libc::fork();
-        check_os_error!(ret, WaErrorKind::ForkError);
+        check_os_error!(ret, MonitorErrorKind::ForkError);
         let pid = ret;
         if pid == 0 {
             // child process begin
@@ -99,7 +99,7 @@ impl Target {
             // child process end
 
             let errno = get_errno();
-            check_os_error!(@errno errno,WaErrorKind::ExecvpError);
+            check_os_error!(@errno errno,MonitorErrorKind::ExecvpError);
             std::process::exit(0);
             // child process fail
         }
@@ -115,10 +115,10 @@ impl Target {
             if ret < 0 {
                 let _ = libc::kill(pid, libc::SIGKILL);
             }
-            check_os_error!(ret, WaErrorKind::PipeReadError);
+            check_os_error!(ret, MonitorErrorKind::PipeReadError);
 
             let errno = i32::from_ne_bytes(bytes);
-            check_os_error!(@errno errno,WaErrorKind::ChildError);
+            check_os_error!(@errno errno,MonitorErrorKind::ChildError);
         }
 
         pid
@@ -139,7 +139,7 @@ impl Target {
             if ret < 0 {
                 let _ = libc::kill(pid, libc::SIGKILL);
             }
-            check_os_error!(ret, WaErrorKind::Wait4Error);
+            check_os_error!(ret, MonitorErrorKind::Wait4Error);
         }
 
         let real_time = t0.elapsed().as_micros() as u64;
