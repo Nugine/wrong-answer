@@ -6,14 +6,32 @@ pub use self::component::*;
 pub use self::judge::*;
 pub use self::unit::*;
 
-pub use wa_monitor::Target;
-pub use wa_monitor::TargetStatus;
+pub use wa_monitor::types::{MonitorErrorKind, Target, TargetStatus};
 
-#[derive(Debug)]
+use std::fmt::{self, Display};
+use thiserror::Error;
+
+#[derive(Debug, Error)]
 pub enum WaError {
-    Io(std::io::Error),
+    Io(
+        #[from]
+        #[source]
+        std::io::Error,
+    ),
     Compiler(String),
-    Monitor(wa_monitor::MonitorErrorKind),
+    Monitor(#[from] MonitorErrorKind),
 }
 
 pub type WaResult<T> = Result<T, WaError>;
+
+impl Display for WaError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[test]
+fn test_waerror_display() {
+    let error = WaError::Compiler("asd".into());
+    println!("{}", error);
+}

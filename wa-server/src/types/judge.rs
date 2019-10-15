@@ -58,3 +58,10 @@ pub struct Submission {
     pub language: Language,
     pub result: Option<JudgeResult>,
 }
+
+pub struct Limit {
+    pub time: MicroSecond,
+    pub memory: KiloByte,
+    pub output: KiloByte,
+    pub security_cfg_path: String,
+}

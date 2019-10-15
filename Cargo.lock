@@ -326,6 +326,7 @@ name = "wa-server"
 version = "0.1.0"
 dependencies = [
  "num-traits 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "wa-monitor 0.1.0",
 ]

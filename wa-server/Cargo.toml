@@ -8,3 +8,6 @@ edition = "2018"
 
 [dependencies]
 wa-monitor = { path = "../wa-monitor" }
+thiserror = "1.0.2"
+num-traits = "0.2.8"
+serde_json = "1.0.41"

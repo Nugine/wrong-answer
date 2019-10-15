@@ -1,14 +1,7 @@
-use super::unit::*;
+use super::Limit;
 use super::Target;
 use super::TargetStatus;
 use super::WaResult;
-
-pub struct Limit {
-    pub time: MicroSecond,
-    pub memory: KiloByte,
-    pub output: KiloByte,
-    pub security_cfg_path: String,
-}
 
 pub trait SandBox {
     fn run(&self, working_dir: &str, target: &Target, limit: &Limit) -> WaResult<TargetStatus>;
