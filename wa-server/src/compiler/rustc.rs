@@ -51,11 +51,11 @@ fn test_rustc() {
         sandbox: BareMonitorSandBox,
     };
 
-    const HELLO_PATH: &str = "../assets/hello.rs";
+    const HELLO_PATH: &str = "../assets/hello-rustc.rs";
 
     let task = CompileTask {
         source_path: HELLO_PATH,
-        binary_path: Some("../temp/hello"),
+        binary_path: Some("../temp/hello-rustc"),
         ce_message_path: Some("../temp/ce.txt"),
     };
 
