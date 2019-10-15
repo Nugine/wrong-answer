@@ -1,7 +1,9 @@
+pub mod types;
+
 use libc::c_char;
 use libc::c_int;
-use serde::Serialize;
-use std::ffi::CString;
+
+use crate::types::*;
 
 macro_rules! check_os_error {
     ($ret: expr, $kind: expr) => {{
@@ -28,34 +30,6 @@ macro_rules! check_os_error {
 #[inline(always)]
 unsafe fn get_errno() -> c_int {
     *libc::__errno_location()
-}
-
-#[derive(Debug)]
-pub enum MonitorErrorKind {
-    PipeError = 2,
-    ForkError = 3,
-    PipeReadError = 4,
-    Wait4Error = 5,
-    ChildError = 6,
-    ExecvpError = 7,
-}
-
-pub struct Target {
-    pub bin: CString,
-    pub args: Vec<CString>,
-    pub stdin: Option<CString>,
-    pub stdout: Option<CString>,
-    pub stderr: Option<CString>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct TargetStatus {
-    pub code: Option<i32>,
-    pub signal: Option<i32>,
-    pub real_time: u64, // in microseconds
-    pub user_time: u64, // in microseconds
-    pub sys_time: u64,  // in microseconds
-    pub memory: u64,    // in kilobytes
 }
 
 impl Target {
@@ -152,8 +126,8 @@ impl Target {
             }
         };
 
-        let user_time = (ru.ru_utime.tv_sec as u64 * 1000_000) + (ru.ru_utime.tv_usec as u64);
-        let sys_time = (ru.ru_stime.tv_sec as u64 * 1000_000) + (ru.ru_stime.tv_usec as u64);
+        let user_time = (ru.ru_utime.tv_sec as u64 * 1_000_000) + (ru.ru_utime.tv_usec as u64);
+        let sys_time = (ru.ru_stime.tv_sec as u64 * 1_000_000) + (ru.ru_stime.tv_usec as u64);
         let memory = ru.ru_maxrss as u64;
 
         TargetStatus {

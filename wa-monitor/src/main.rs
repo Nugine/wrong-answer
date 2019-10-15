@@ -1,6 +1,6 @@
 use std::ffi::{CString, NulError};
 use structopt::StructOpt;
-use wa_monitor::Target;
+use wa_monitor::types::Target;
 
 fn parse_c_string(s: &str) -> Result<CString, NulError> {
     CString::new(s)
