@@ -25,12 +25,12 @@ pub trait SandBox {
 pub struct CompileTask<'a> {
     pub working_dir: &'a str,
     pub source_path: &'a str,
-    pub binary_path: Option<&'a str>,
+    pub binary_path: &'a str,
     pub ce_message_path: Option<&'a str>,
 }
 
 pub trait Compiler {
-    fn compile(&self, task: CompileTask, limit: Limit) -> WaResult<()>;
+    fn compile(&self, task: CompileTask, limit: Limit) -> WaResult<TargetStatus>;
 }
 
 #[derive(Debug, PartialEq, Eq)]

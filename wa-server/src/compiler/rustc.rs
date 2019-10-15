@@ -6,20 +6,11 @@ pub struct Rustc<S: SandBox> {
 }
 
 impl<S: SandBox> Compiler for Rustc<S> {
-    fn compile(&self, task: CompileTask, limit: Limit) -> WaResult<()> {
-        let binary_path = match task.binary_path {
-            Some(p) => p,
-            None => {
-                const MSG: &str = "compiler: expected binary path, found None";
-                log::error!("{}", MSG);
-                return Err(WaError::Internal(MSG.into()));
-            }
-        };
-
+    fn compile(&self, task: CompileTask, limit: Limit) -> WaResult<TargetStatus> {
         let args: Vec<&str> = vec![
             task.source_path,
             "-o",
-            binary_path,
+            task.binary_path,
             "-O",
             "--edition",
             "2018",
@@ -34,7 +25,7 @@ impl<S: SandBox> Compiler for Rustc<S> {
             stderr: task.ce_message_path,
         };
 
-        self.sandbox.run(target, limit).map(|_| ())
+        self.sandbox.run(target, limit)
     }
 }
 
@@ -50,8 +41,8 @@ fn test_rustc() {
     let task = CompileTask {
         working_dir: "./",
         source_path: HELLO_PATH,
-        binary_path: Some("../temp/hello-rustc"),
-        ce_message_path: Some("../temp/ce.txt"),
+        binary_path: "../temp/hello-rustc",
+        ce_message_path: Some("../temp/ce-rustc.txt"),
     };
 
     let ret = compiler.compile(
