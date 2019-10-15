@@ -11,7 +11,9 @@ pub enum MonitorErrorKind {
     PipeReadError = 4,
     Wait4Error = 5,
     ChildError = 6,
-    ExecvpError = 7,
+
+    // can not distinguish ExecvpError from user runtime error, use special number here
+    ExecvpError = 42,
 }
 
 pub struct Target {
