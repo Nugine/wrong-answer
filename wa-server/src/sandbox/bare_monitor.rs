@@ -10,27 +10,18 @@ const NULL_DEVICE: &str = "/dev/null";
 
 impl SandBox for BareMonitorSandBox {
     /// limit: no effect
-    fn run(&self, working_dir: &str, target: &Target, _limit: &Limit) -> WaResult<TargetStatus> {
+    fn run(&self, target: Target, _limit: Limit) -> WaResult<TargetStatus> {
         let mut command = Command::new(MONITOR_PATH);
-        command.current_dir(working_dir);
+        command.current_dir(target.working_dir);
 
-        // target is from utf8 data, so unwrap here
-        fn transform(s: &Option<std::ffi::CString>) -> &str {
-            s.as_ref()
-                .map(|s| s.to_str().unwrap())
-                .unwrap_or(NULL_DEVICE)
-        }
-
-        command.arg("-i").arg(transform(&target.stdin));
-        command.arg("-o").arg(transform(&target.stdout));
-        command.arg("-e").arg(transform(&target.stderr));
-
-        let args = target.args.iter().map(|s| s.to_str().unwrap());
+        command.arg("-i").arg(target.stdin.unwrap_or(NULL_DEVICE));
+        command.arg("-o").arg(target.stdout.unwrap_or(NULL_DEVICE));
+        command.arg("-e").arg(target.stderr.unwrap_or(NULL_DEVICE));
 
         command
             .arg("--")
-            .arg(target.bin.to_str().unwrap())
-            .args(args)
+            .arg(target.bin)
+            .args(target.args)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
@@ -58,43 +49,41 @@ impl SandBox for BareMonitorSandBox {
 
 #[test]
 fn test_bare_monitor() {
-    use std::ffi::CString;
-
     let sandbox = BareMonitorSandBox;
 
     let ret = sandbox.run(
-        "./",
-        &Target {
-            bin: CString::new("ls").unwrap(),
-            args: vec![],
+        Target {
+            working_dir: "./",
+            bin: "ls",
+            args: &vec![],
             stdin: None,
             stdout: None,
             stderr: None,
         },
-        &Limit {
+        Limit {
             time: u64::max_value(),
             memory: u64::max_value(),
             output: u64::max_value(),
-            security_cfg_path: "".into(),
+            security_cfg_path: "",
         },
     );
 
     assert_eq!(ret.unwrap().code, Some(0));
 
     let ret = sandbox.run(
-        "./",
-        &Target {
-            bin: CString::new("qwertyuiop").unwrap(),
-            args: vec![],
+        Target {
+            working_dir: "./",
+            bin: "qwertyuiop",
+            args: &vec![],
             stdin: None,
             stdout: None,
             stderr: None,
         },
-        &Limit {
+        Limit {
             time: u64::max_value(),
             memory: u64::max_value(),
             output: u64::max_value(),
-            security_cfg_path: "".into(),
+            security_cfg_path: "",
         },
     );
 

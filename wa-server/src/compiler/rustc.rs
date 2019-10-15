@@ -1,5 +1,4 @@
 use crate::types::*;
-use std::ffi::CString;
 
 /// rustc $SOURCE -o $BIN -O --edition 2018
 pub struct Rustc<S: SandBox> {
@@ -7,7 +6,7 @@ pub struct Rustc<S: SandBox> {
 }
 
 impl<S: SandBox> Compiler for Rustc<S> {
-    fn compile(&self, working_dir: &str, task: CompileTask, limit: &Limit) -> WaResult<()> {
+    fn compile(&self, task: CompileTask, limit: Limit) -> WaResult<()> {
         let binary_path = match task.binary_path {
             Some(p) => p,
             None => {
@@ -17,30 +16,25 @@ impl<S: SandBox> Compiler for Rustc<S> {
             }
         };
 
-        let bin = CString::new("rustc").unwrap();
-        let args: Vec<CString> = [
+        let args: Vec<&str> = vec![
             task.source_path,
             "-o",
             binary_path,
             "-O",
             "--edition",
             "2018",
-        ]
-        .iter()
-        .map(|&s| CString::new(s).unwrap())
-        .collect();
-
-        let stderr = task.ce_message_path.map(|s| CString::new(s).unwrap());
+        ];
 
         let target = Target {
-            bin,
-            args,
+            working_dir: task.working_dir,
+            bin: "rustc",
+            args: &args,
             stdin: None,
             stdout: None,
-            stderr,
+            stderr: task.ce_message_path,
         };
 
-        self.sandbox.run(working_dir, &target, limit).map(|_| ())
+        self.sandbox.run(target, limit).map(|_| ())
     }
 }
 
@@ -54,19 +48,19 @@ fn test_rustc() {
     const HELLO_PATH: &str = "../assets/hello-rustc.rs";
 
     let task = CompileTask {
+        working_dir: "./",
         source_path: HELLO_PATH,
         binary_path: Some("../temp/hello-rustc"),
         ce_message_path: Some("../temp/ce.txt"),
     };
 
     let ret = compiler.compile(
-        "./",
         task,
-        &Limit {
+        Limit {
             time: u64::max_value(),
             memory: u64::max_value(),
             output: u64::max_value(),
-            security_cfg_path: "".into(),
+            security_cfg_path: "",
         },
     );
 

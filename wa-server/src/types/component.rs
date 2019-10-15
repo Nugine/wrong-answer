@@ -1,20 +1,36 @@
-use super::Limit;
-use super::Target;
+use super::unit::*;
 use super::TargetStatus;
 use super::WaResult;
 
+pub struct Target<'a> {
+    pub working_dir: &'a str,
+    pub bin: &'a str,
+    pub args: &'a Vec<&'a str>,
+    pub stdin: Option<&'a str>,
+    pub stdout: Option<&'a str>,
+    pub stderr: Option<&'a str>,
+}
+
+pub struct Limit<'a> {
+    pub time: MicroSecond,
+    pub memory: KiloByte,
+    pub output: KiloByte,
+    pub security_cfg_path: &'a str,
+}
+
 pub trait SandBox {
-    fn run(&self, working_dir: &str, target: &Target, limit: &Limit) -> WaResult<TargetStatus>;
+    fn run(&self, target: Target, limit: Limit) -> WaResult<TargetStatus>;
 }
 
 pub struct CompileTask<'a> {
+    pub working_dir: &'a str,
     pub source_path: &'a str,
     pub binary_path: Option<&'a str>,
     pub ce_message_path: Option<&'a str>,
 }
 
 pub trait Compiler {
-    fn compile(&self, working_dir: &str, task: CompileTask, limit: &Limit) -> WaResult<()>;
+    fn compile(&self, task: CompileTask, limit: Limit) -> WaResult<()>;
 }
 
 #[derive(Debug, PartialEq, Eq)]
