@@ -11,8 +11,8 @@ const NULL_DEVICE: &str = "/dev/null";
 impl SandBox for BareMonitorSandBox {
     /// limit: no effect
     fn run(&self, working_dir: &str, target: &Target, _limit: &Limit) -> WaResult<TargetStatus> {
-        let mut child_builder = Command::new(MONITOR_PATH);
-        child_builder.current_dir(working_dir);
+        let mut command = Command::new(MONITOR_PATH);
+        command.current_dir(working_dir);
 
         // target is from utf8 data, so unwrap here
         fn transform(s: &Option<std::ffi::CString>) -> &str {
@@ -21,19 +21,21 @@ impl SandBox for BareMonitorSandBox {
                 .unwrap_or(NULL_DEVICE)
         }
 
-        child_builder.arg("-i").arg(transform(&target.stdin));
-        child_builder.arg("-o").arg(transform(&target.stdout));
-        child_builder.arg("-e").arg(transform(&target.stderr));
+        command.arg("-i").arg(transform(&target.stdin));
+        command.arg("-o").arg(transform(&target.stdout));
+        command.arg("-e").arg(transform(&target.stderr));
 
         let args = target.args.iter().map(|s| s.to_str().unwrap());
 
-        let child = child_builder
+        command
+            .arg("--")
             .arg(target.bin.to_str().unwrap())
             .args(args)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
-            .spawn()?;
+            .stderr(Stdio::inherit());
+
+        let child = command.spawn()?;
 
         let output = child.wait_with_output()?;
         let code = output.status.code();
@@ -77,7 +79,7 @@ fn test_bare_monitor() {
         },
     );
 
-    dbg!(ret.unwrap());
+    assert_eq!(ret.unwrap().code, Some(0));
 
     let ret = sandbox.run(
         "./",
@@ -96,5 +98,8 @@ fn test_bare_monitor() {
         },
     );
 
-    dbg!(ret.unwrap());
+    assert_eq!(
+        ret.unwrap().code,
+        Some(MonitorErrorKind::ExecvpError as i32)
+    );
 }

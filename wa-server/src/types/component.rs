@@ -7,13 +7,14 @@ pub trait SandBox {
     fn run(&self, working_dir: &str, target: &Target, limit: &Limit) -> WaResult<TargetStatus>;
 }
 
+pub struct CompileTask<'a> {
+    pub source_path: &'a str,
+    pub binary_path: Option<&'a str>,
+    pub ce_message_path: Option<&'a str>,
+}
+
 pub trait Compiler {
-    fn compile(
-        &self,
-        working_dir: &str,
-        source_path: &str,
-        binary_path: Option<&str>,
-    ) -> WaResult<()>;
+    fn compile(&self, working_dir: &str, task: CompileTask, limit: &Limit) -> WaResult<()>;
 }
 
 #[derive(Debug, PartialEq, Eq)]

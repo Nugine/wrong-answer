@@ -20,6 +20,7 @@ pub enum WaError {
     ),
     Compiler(String),
     Monitor(#[from] MonitorErrorKind),
+    Internal(String),
 }
 
 pub type WaResult<T> = Result<T, WaError>;
@@ -28,10 +29,4 @@ impl Display for WaError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
     }
-}
-
-#[test]
-fn test_waerror_display() {
-    let error = WaError::Compiler("asd".into());
-    println!("{}", error);
 }

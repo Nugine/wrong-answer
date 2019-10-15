@@ -36,7 +36,7 @@ impl Comparer for SimpleComparer {
             return Ok(Comparision::WA);
         }
 
-        return Ok(Comparision::AC);
+        Ok(Comparision::AC)
     }
 }
 
