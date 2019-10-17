@@ -22,6 +22,7 @@ pub struct Problem {
 
 pub enum JudgeStatus {
     Pending,
+    Queuing,
     Compiling,
     Judging,
     AC,  // Accepted
@@ -52,9 +53,25 @@ pub struct JudgeResult {
 }
 
 pub struct Submission {
-    pub submission_id: String,
+    pub submission_id: u64,
     pub problem_id: String,
     pub source_code: String,
     pub language: Language,
     pub result: Option<JudgeResult>,
+}
+
+pub struct Update {
+    pub submission_id: u64,
+    pub status: JudgeStatus,
+    pub result: Option<JudgeResult>,
+}
+
+impl Update {
+    pub fn queuing(id: u64) -> Self {
+        Self {
+            submission_id: id,
+            status: JudgeStatus::Queuing,
+            result: None,
+        }
+    }
 }

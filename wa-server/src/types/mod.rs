@@ -5,7 +5,6 @@ mod unit;
 pub use self::component::*;
 pub use self::judge::*;
 pub use self::unit::*;
-
 pub use wa_monitor::types::{MonitorErrorKind, TargetStatus};
 
 use std::fmt::{self, Display};
@@ -20,6 +19,11 @@ pub enum WaError {
     ),
     Compiler(String),
     Monitor(#[from] MonitorErrorKind),
+    Redis(
+        #[from]
+        #[source]
+        redis::RedisError,
+    ),
 }
 
 pub type WaResult<T> = Result<T, WaError>;
