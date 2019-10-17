@@ -1,24 +1,29 @@
 use crate::types::*;
 
-/// rustc $SOURCE -o $BIN -O --edition 2018
-pub struct Rustc<S: SandBox> {
+// javac -J-Xms64m -J-Xmx512m -encoding UTF-8 -sourcepath $SOURCE -d $BIN Main.java
+pub struct Javac<S: SandBox> {
     sandbox: S,
 }
 
-impl<S: SandBox> Compiler for Rustc<S> {
+impl<S: SandBox> Compiler for Javac<S> {
     fn compile(&self, task: CompileTask, limit: Limit) -> WaResult<TargetStatus> {
-        let args: Vec<&str> = vec![
+        let bin = "javac";
+        let java_path = &format!("{}/Main.java", task.source_path);
+        let args = vec![
+            "-J-Xms64m",
+            "-J-Xmx512m",
+            "-encoding",
+            "UTF-8",
+            "-sourcepath",
             task.source_path,
-            "-o",
+            "-d",
             task.binary_path,
-            "-O",
-            "--edition",
-            "2018",
+            &java_path,
         ];
 
         let target = Target {
             working_dir: task.working_dir,
-            bin: "rustc",
+            bin,
             args: &args,
             stdin: None,
             stdout: None,
@@ -30,19 +35,19 @@ impl<S: SandBox> Compiler for Rustc<S> {
 }
 
 #[test]
-fn test_rustc() {
+fn test_javac() {
     use crate::sandbox::BareMonitorSandBox;
-    let compiler = Rustc {
+    let compiler = Javac {
         sandbox: BareMonitorSandBox,
     };
 
-    const HELLO_PATH: &str = "../assets/hello-rustc.rs";
+    const HELLO_PATH: &str = "../assets/hello-javac";
 
     let task = CompileTask {
         working_dir: "./",
         source_path: HELLO_PATH,
-        binary_path: "../temp/hello-rustc",
-        ce_message_path: Some("../temp/ce-rustc.txt"),
+        binary_path: "../temp/hello-javac",
+        ce_message_path: Some("../temp/ce-javac.txt"),
     };
 
     let ret = compiler.compile(task, Limit::no_effect());

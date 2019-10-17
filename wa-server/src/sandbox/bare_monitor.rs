@@ -60,12 +60,7 @@ fn test_bare_monitor() {
             stdout: None,
             stderr: None,
         },
-        Limit {
-            time: u64::max_value(),
-            memory: u64::max_value(),
-            output: u64::max_value(),
-            security_cfg_path: "",
-        },
+        Limit::no_effect(),
     );
 
     assert_eq!(ret.unwrap().code, Some(0));
@@ -79,12 +74,7 @@ fn test_bare_monitor() {
             stdout: None,
             stderr: None,
         },
-        Limit {
-            time: u64::max_value(),
-            memory: u64::max_value(),
-            output: u64::max_value(),
-            security_cfg_path: "",
-        },
+        Limit::no_effect(),
     );
 
     assert_eq!(

@@ -52,17 +52,9 @@ fn test_gcc() {
         ce_message_path: Some("../temp/ce-gcc.txt"),
     };
 
-    let ret = compiler.compile(
-        task,
-        Limit {
-            time: u64::max_value(),
-            memory: u64::max_value(),
-            output: u64::max_value(),
-            security_cfg_path: "",
-        },
-    );
+    let ret = compiler.compile(task, Limit::no_effect());
 
-    assert!(ret.is_ok());
+    assert_eq!(ret.unwrap().code, Some(0));
 }
 
 #[test]
@@ -83,15 +75,7 @@ fn test_gpp() {
         ce_message_path: Some("../temp/ce-g++.txt"),
     };
 
-    let ret = compiler.compile(
-        task,
-        Limit {
-            time: u64::max_value(),
-            memory: u64::max_value(),
-            output: u64::max_value(),
-            security_cfg_path: "",
-        },
-    );
+    let ret = compiler.compile(task, Limit::no_effect());
 
-    assert!(ret.is_ok());
+    assert_eq!(ret.unwrap().code, Some(0));
 }

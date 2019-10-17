@@ -20,7 +20,6 @@ pub enum WaError {
     ),
     Compiler(String),
     Monitor(#[from] MonitorErrorKind),
-    Internal(String),
 }
 
 pub type WaResult<T> = Result<T, WaError>;
