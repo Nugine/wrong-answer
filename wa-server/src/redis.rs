@@ -1,4 +1,4 @@
-use crate::types::{Submission, WaResult};
+use crate::types::*;
 
 pub type RedisPool = r2d2::Pool<r2d2_redis::RedisConnectionManager>;
 
@@ -16,6 +16,11 @@ impl RedisBroker {
 impl RedisBroker {
     // TODO:
     pub fn get_submission(&self) -> WaResult<Submission> {
+        unimplemented!()
+    }
+
+    // TODO:
+    pub fn update_submission(&self, _update: Update) -> WaResult<()> {
         unimplemented!()
     }
 }
