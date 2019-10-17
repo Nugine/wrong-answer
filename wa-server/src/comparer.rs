@@ -1,19 +1,34 @@
-use crate::types::{Comparer, Comparision, WaResult};
+use crate::types::*;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 
 pub struct SimpleComparer {
     pub ignore_trailing_space: bool,
 }
 
 impl Comparer for SimpleComparer {
-    fn compare(&self, std_answer: &str, user_answer: &str) -> WaResult<Comparision> {
-        let std_lines = std_answer.lines();
-        let mut user_lines = user_answer.lines();
+    fn compare(&self, task: CompareTask, _limit: Limit) -> WaResult<Comparision> {
+        let mut std_reader = BufReader::new(File::open(task.stdout_path)?);
+        let mut user_reader = BufReader::new(File::open(task.userout_path)?);
 
-        for std_line in std_lines {
-            let user_line: &str = match user_lines.next() {
-                Some(s) => s,
-                None => return Ok(Comparision::WA),
-            };
+        let mut std_line = String::new();
+        let mut user_line = String::new();
+
+        loop {
+            std_line.clear();
+            let len = std_reader.read_line(&mut std_line)?;
+            if len == 0 {
+                break;
+            }
+
+            user_line.clear();
+            let len = user_reader.read_line(&mut user_line)?;
+            if len == 0 {
+                return Ok(Comparision::WA);
+            }
+
+            let std_line = trim_endline(&std_line);
+            let user_line = trim_endline(&user_line);
 
             let std_line_trimed = std_line.trim_end();
             let user_line_trimed = user_line.trim_end();
@@ -32,70 +47,84 @@ impl Comparer for SimpleComparer {
                 return Ok(Comparision::PE);
             }
         }
-        if user_lines.next().is_some() {
-            return Ok(Comparision::WA);
+        {
+            let len = user_reader.read_line(&mut user_line)?;
+            if len > 0 {
+                return Ok(Comparision::WA);
+            }
         }
 
         Ok(Comparision::AC)
     }
 }
 
+fn trim_endline(s: &str) -> &str {
+    let bytes = s.as_bytes();
+    let bytes_len = bytes.len();
+
+    unsafe {
+        if bytes_len >= 1 && *bytes.get_unchecked(bytes_len - 1) == b'\n' {
+            if bytes_len >= 2 && *bytes.get_unchecked(bytes_len - 2) == b'\r' {
+                &s[..bytes_len - 2]
+            } else {
+                &s[..bytes_len - 1]
+            }
+        } else {
+            &s[..]
+        }
+    }
+}
+
 #[test]
 fn test_simple_comparer() {
-    let comparer = SimpleComparer {
+    use std::fs::File;
+    use std::io::Write;
+    use Comparision::*;
+
+    let mut comparer = SimpleComparer {
         ignore_trailing_space: true,
     };
 
-    let ret = comparer.compare("1 2\n3 4", "1 2\r\n3 4\n");
-    assert_eq!(ret.unwrap(), Comparision::AC);
+    macro_rules! compare {
+        ($ret:expr, $std:expr,$user:expr) => {{
+            let mut stdout = File::create("../temp/stdout.out").unwrap();
+            let mut user = File::create("../temp/userout.out").unwrap();
+            stdout.write_all($std).unwrap();
+            user.write_all($user).unwrap();
+            drop((stdout, user));
+            let ret = comparer.compare(
+                CompareTask {
+                    working_dir: "",
+                    stdin_path: "",
+                    stdout_path: "../temp/stdout.out",
+                    userout_path: "../temp/userout.out",
+                },
+                Limit::no_effect(),
+            );
+            assert_eq!(ret.unwrap(), $ret);
+        }};
+    }
 
-    let ret = comparer.compare("1 2 \n3 4", "1 2 \r\n3 4 \n");
-    assert_eq!(ret.unwrap(), Comparision::AC);
+    comparer.ignore_trailing_space = true;
 
-    let ret = comparer.compare("1 2 \n3 4", "1 2 \r\n3 4 5\n");
-    assert_eq!(ret.unwrap(), Comparision::WA);
-    let ret = comparer.compare("1 2 \n3 4 5", "1 2 \r\n3 4 \n");
-    assert_eq!(ret.unwrap(), Comparision::WA);
+    compare!(AC, b"1 2\n3 4", b"1 2\r\n3 4\n");
+    compare!(AC, b"1 2 \n3 4", b"1 2 \r\n3 4 \n");
+    compare!(WA, b"1 2 \n3 4", b"1 2 \r\n3 4 5\n");
+    compare!(WA, b"1 2 \n3 4 5", b"1 2 \r\n3 4 \n");
+    compare!(WA, b"\n", b"");
+    compare!(WA, b"", b"\n");
+    compare!(AC, b" \n", b" ");
+    compare!(AC, b"1\n", b"1");
 
-    let ret = comparer.compare("\n", "");
-    assert_eq!(ret.unwrap(), Comparision::WA);
+    comparer.ignore_trailing_space = false;
 
-    let ret = comparer.compare("", "\n");
-    assert_eq!(ret.unwrap(), Comparision::WA);
-
-    let ret = comparer.compare(" \n", " ");
-    assert_eq!(ret.unwrap(), Comparision::AC);
-
-    let ret = comparer.compare("1\n", "1");
-    assert_eq!(ret.unwrap(), Comparision::AC);
-
-    let comparer = SimpleComparer {
-        ignore_trailing_space: false,
-    };
-
-    let ret = comparer.compare("1 2\n3 4", "1 2\r\n3 4\n");
-    assert_eq!(ret.unwrap(), Comparision::AC);
-
-    let ret = comparer.compare("1 2 \n3 4", "1 2 \r\n3 4 \n");
-    assert_eq!(ret.unwrap(), Comparision::PE);
-
-    let ret = comparer.compare("1 2 \n3 4", "1 2 \r\n3 4 5\n");
-    assert_eq!(ret.unwrap(), Comparision::WA);
-    let ret = comparer.compare("1 2 \n3 4 5", "1 2 \r\n3 4 \n");
-    assert_eq!(ret.unwrap(), Comparision::WA);
-
-    let ret = comparer.compare("\n", "");
-    assert_eq!(ret.unwrap(), Comparision::WA);
-
-    let ret = comparer.compare("", "\n");
-    assert_eq!(ret.unwrap(), Comparision::WA);
-
-    let ret = comparer.compare(" \n", " ");
-    assert_eq!(ret.unwrap(), Comparision::AC);
-
-    let ret = comparer.compare("1\n", "1");
-    assert_eq!(ret.unwrap(), Comparision::AC);
-
-    let ret = comparer.compare("1 \n", "1");
-    assert_eq!(ret.unwrap(), Comparision::PE);
+    compare!(AC, b"1 2\n3 4", b"1 2\r\n3 4\n");
+    compare!(PE, b"1 2 \n3 4", b"1 2 \r\n3 4 \n");
+    compare!(WA, b"1 2 \n3 4", b"1 2 \r\n3 4 5\n");
+    compare!(WA, b"1 2 \n3 4 5", b"1 2 \r\n3 4 \n");
+    compare!(WA, b"\n", b"");
+    compare!(WA, b"", b"\n");
+    compare!(AC, b" \n", b" ");
+    compare!(AC, b"1\n", b"1");
+    compare!(PE, b"1 \n", b"1");
 }

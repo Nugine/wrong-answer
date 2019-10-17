@@ -33,13 +33,31 @@ pub trait Compiler {
     fn compile(&self, task: CompileTask, limit: Limit) -> WaResult<TargetStatus>;
 }
 
+pub struct CompareTask<'a> {
+    pub working_dir: &'a str,
+    pub stdin_path: &'a str,
+    pub stdout_path: &'a str,
+    pub userout_path: &'a str,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Comparision {
-    AC,
-    PE,
-    WA,
+    AC = 0,
+    WA = 1,
+    PE = 2,
 }
 
 pub trait Comparer {
-    fn compare(&self, std_answer: &str, user_answer: &str) -> WaResult<Comparision>;
+    fn compare(&self, task: CompareTask, limit: Limit) -> WaResult<Comparision>;
+}
+
+impl Limit<'static> {
+    pub fn no_effect() -> Self {
+        Limit {
+            time: u64::max_value(),
+            memory: u64::max_value(),
+            output: u64::max_value(),
+            security_cfg_path: "",
+        }
+    }
 }
