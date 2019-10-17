@@ -23,14 +23,11 @@ macro_rules! handle {
 impl Listener {
     pub fn listen(self) -> impl Fn() + Send + Sync + 'static {
         move || loop {
-            let submission = handle!(
-                self.redis.get_submission(), 
-                "redis error: {}"
-            );
+            let submission = handle!(self.redis.get_submission(), "redis error: {}");
 
             handle!(
                 self.update_sender
-                    .send(Update::queuing(submission.submission_id)),
+                    .send(Update::from_status(submission.id, JudgeStatus::Queuing)),
                 "updater is disconnected: {}"
             );
 

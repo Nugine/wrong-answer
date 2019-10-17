@@ -53,8 +53,8 @@ pub struct JudgeResult {
 }
 
 pub struct Submission {
-    pub submission_id: u64,
-    pub problem_id: String,
+    pub id: u64,
+    pub problem_id: u64,
     pub source_code: String,
     pub language: Language,
     pub result: Option<JudgeResult>,
@@ -67,10 +67,10 @@ pub struct Update {
 }
 
 impl Update {
-    pub fn queuing(id: u64) -> Self {
+    pub fn from_status(id: u64, status: JudgeStatus) -> Self {
         Self {
             submission_id: id,
-            status: JudgeStatus::Queuing,
+            status,
             result: None,
         }
     }

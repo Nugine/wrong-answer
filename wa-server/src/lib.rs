@@ -8,6 +8,8 @@ pub mod sandbox;
 pub mod threads;
 pub mod types;
 
+pub use config::GLOBAL_CONFIG;
+
 pub fn hello() {
     println!("Hello, world!");
 }
