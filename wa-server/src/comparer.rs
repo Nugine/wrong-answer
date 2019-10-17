@@ -62,16 +62,14 @@ fn trim_endline(s: &str) -> &str {
     let bytes = s.as_bytes();
     let bytes_len = bytes.len();
 
-    unsafe {
-        if bytes_len >= 1 && *bytes.get_unchecked(bytes_len - 1) == b'\n' {
-            if bytes_len >= 2 && *bytes.get_unchecked(bytes_len - 2) == b'\r' {
-                &s[..bytes_len - 2]
-            } else {
-                &s[..bytes_len - 1]
-            }
+    if let Some(b'\n') = bytes.get(bytes_len - 1) {
+        if let Some(b'\r') = bytes.get(bytes_len - 2) {
+            &s[..bytes_len - 2]
         } else {
-            &s[..]
+            &s[..bytes_len - 1]
         }
+    } else {
+        &s[..]
     }
 }
 
