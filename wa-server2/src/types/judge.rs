@@ -76,3 +76,22 @@ pub enum Comparision {
     WA = 1,
     PE = 2,
 }
+
+
+impl Submission{
+    pub fn update(&self,status: JudgeStatus)->Update{
+        Update{
+            submission_id: self.id,
+            status,
+            result: None
+        }
+    }
+
+    pub fn final_update(&self, status: JudgeStatus, result: JudgeResult)->Update{
+        Update{
+            submission_id: self.id,
+            status,
+            result: Some(result)
+        }
+    }
+}
