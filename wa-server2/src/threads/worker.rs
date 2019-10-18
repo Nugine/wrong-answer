@@ -1,6 +1,5 @@
 use super::*;
 use crate::lang::*;
-use crate::sandbox::SandBox;
 use crate::types::*;
 use crate::GLOBAL_CONFIG;
 
@@ -49,7 +48,7 @@ impl Worker {
         let broker = submission.lang.get_broker();
 
         // save source code
-        let src_path: PathBuf = broker.save_source(&submission, working_dir)?;
+        let src_path: PathBuf = broker.save_source(&submission.source_code, working_dir)?;
 
         // Queuing -> Compiling
         self.try_send_update(submission.update(JudgeStatus::Compiling))?;
@@ -60,6 +59,7 @@ impl Worker {
             working_dir,
             src_path: &src_path,
             compile_message_path: &compile_message_path,
+            lang: submission.lang,
         };
         let bin_path = match broker.compile(task)? {
             CompileResult::None => None,
@@ -85,6 +85,7 @@ impl Worker {
             submission: &submission,
             src_path,
             bin_path,
+            case_index: 0,
             stdin_path: data_dir.to_owned(),
             stdout_path: data_dir.to_owned(),
             userout_path: working_dir.join("userout.out"),
@@ -103,6 +104,7 @@ impl Worker {
         let cases =
             (1..=submission.case_num).map(|i| (i, format!("{}.in", i), format!("{}.out", i)));
         for (i, input, output) in cases {
+            case_task.case_index = i + 1;
             case_task.stdin_path.push(input);
             case_task.stdout_path.push(output);
 
@@ -113,7 +115,7 @@ impl Worker {
                         err,
                         submission.id,
                         submission.problem_id,
-                        i + 1
+                        case_task.case_index,
                     );
                     return Err(err);
                 }

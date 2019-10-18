@@ -9,7 +9,7 @@ const MONITOR_PATH: &str = "wa-monitor";
 const NULL_DEVICE: &str = "/dev/null";
 
 impl SandBox for BareMonitorSandBox {
-    fn run(&self, target: Target, _limit: Option<Limit>) -> WaResult<TargetStatus> {
+    fn run(&self, target: Target, _limit: Option<&Limit>) -> WaResult<TargetStatus> {
         let mut command = Command::new(MONITOR_PATH);
         command.current_dir(target.working_dir);
 
@@ -72,7 +72,7 @@ fn test_bare_monitor() {
         Target {
             working_dir: Path::new("."),
             bin: "ls",
-            args: &vec![],
+            args: vec![],
             stdin: None,
             stdout: None,
             stderr: None,
@@ -86,7 +86,7 @@ fn test_bare_monitor() {
         Target {
             working_dir: Path::new("."),
             bin: "qwertyuiop",
-            args: &vec![],
+            args: vec![],
             stdin: None,
             stdout: None,
             stderr: None,

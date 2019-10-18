@@ -1,6 +1,8 @@
 use super::unit::*;
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIter)]
 pub enum Language {
     C11,
     C89,
@@ -8,11 +10,11 @@ pub enum Language {
     Cpp11,
     Cpp14,
     Cpp17,
-    Java,
-    Python3,
-    JavaScript,
-    TypeScript,
-    Rust,
+    // Rust,
+    // Java,
+    // Python3,
+    // JavaScript,
+    // TypeScript,
 }
 
 pub enum JudgeType {
@@ -71,11 +73,11 @@ pub struct Update {
     pub result: Option<JudgeResult>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Comparision {
-    AC = 0,
-    WA = 1,
-    PE = 2,
+    AC,
+    WA,
+    PE,
 }
 
 impl Submission {
@@ -116,12 +118,12 @@ impl JudgeResult {
     }
 }
 
-impl JudgeCaseResult {
-    pub fn system_error() -> Self {
-        Self {
-            time: 0,
-            memory: 0,
-            status: JudgeStatus::SE,
+impl Comparision {
+    pub fn to_status(self) -> JudgeStatus {
+        match self {
+            Comparision::AC => JudgeStatus::AC,
+            Comparision::PE => JudgeStatus::PE,
+            Comparision::WA => JudgeStatus::WA,
         }
     }
 }
