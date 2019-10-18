@@ -6,6 +6,7 @@ pub use self::component::*;
 pub use self::judge::*;
 pub use self::unit::*;
 pub use wa_monitor::types::{MonitorErrorKind, TargetStatus};
+pub use std::path::{PathBuf,Path};
 
 use std::fmt::{self, Display};
 use thiserror::Error;
@@ -24,6 +25,7 @@ pub enum WaError {
         #[source]
         redis::RedisError,
     ),
+    Channel(&'static str)
 }
 
 pub type WaResult<T> = Result<T, WaError>;

@@ -1,5 +1,6 @@
 use super::unit::*;
 
+#[derive(Debug,Clone,Copy,PartialEq,Eq)]
 pub enum Language {
     C11,
     C89,
@@ -15,8 +16,9 @@ pub enum Language {
 }
 
 pub struct Problem {
+    pub id: u64,
     pub time_limit: Second,
-    pub memory_limit: KiloByte,
+    pub memory_limit: MegaByte,
     pub case_num: u32,
 }
 
@@ -39,24 +41,24 @@ pub enum JudgeStatus {
 }
 
 pub struct JudgeCaseResult {
-    pub time: MicroSecond,
+    pub time: MilliSecond,
     pub memory: KiloByte,
     pub status: JudgeStatus,
 }
 
 pub struct JudgeResult {
-    pub time: MicroSecond,
+    pub time: MilliSecond,
     pub memory: KiloByte,
-    pub status: JudgeStatus,
     pub ce_message: String, // compile error message
     pub cases: Vec<JudgeCaseResult>,
 }
 
 pub struct Submission {
     pub id: u64,
-    pub problem_id: u64,
+    pub problem: Problem,
     pub source_code: String,
     pub language: Language,
+    pub status: JudgeStatus,
     pub result: Option<JudgeResult>,
 }
 
@@ -72,6 +74,17 @@ impl Update {
             submission_id: id,
             status,
             result: None,
+        }
+    }
+}
+
+impl JudgeResult {
+    pub fn from_ce(ce_message: String) -> Self {
+        Self {
+            time: 0,
+            memory: 0,
+            ce_message,
+            cases: vec![],
         }
     }
 }

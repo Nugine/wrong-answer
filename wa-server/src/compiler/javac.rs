@@ -6,7 +6,7 @@ pub struct Javac<S: SandBox> {
 }
 
 impl<S: SandBox> Compiler for Javac<S> {
-    fn compile(&self, task: CompileTask, limit: Limit) -> WaResult<TargetStatus> {
+    fn compile(&self, task: CompileTask, limit: Option<Limit>) -> WaResult<TargetStatus> {
         let bin = "javac";
         let java_path = &format!("{}/Main.java", task.source_path);
         let args = vec![
@@ -27,7 +27,7 @@ impl<S: SandBox> Compiler for Javac<S> {
             args: &args,
             stdin: None,
             stdout: None,
-            stderr: task.ce_message_path,
+            stderr: Some(task.ce_message_path),
         };
 
         self.sandbox.run(target, limit)
@@ -44,10 +44,10 @@ fn test_javac() {
     const HELLO_PATH: &str = "../assets/hello-javac";
 
     let task = CompileTask {
-        working_dir: "./",
+        working_dir: Path::new("."),
         source_path: HELLO_PATH,
         binary_path: "../temp/hello-javac",
-        ce_message_path: Some("../temp/ce-javac.txt"),
+        ce_message_path: "../temp/ce-javac.txt",
     };
 
     let ret = compiler.compile(task, Limit::no_effect());

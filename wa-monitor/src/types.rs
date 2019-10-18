@@ -24,14 +24,17 @@ pub struct Target {
     pub stderr: Option<CString>,
 }
 
+type MilliSecond = u64;
+type KiloByte = u64;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TargetStatus {
     pub code: Option<i32>,
     pub signal: Option<i32>,
-    pub real_time: u64, // in microseconds
-    pub user_time: u64, // in microseconds
-    pub sys_time: u64,  // in microseconds
-    pub memory: u64,    // in kilobytes
+    pub real_time: MilliSecond, 
+    pub user_time: MilliSecond, 
+    pub sys_time: MilliSecond, 
+    pub memory: KiloByte, 
 }
 
 use std::fmt::{self, Display};

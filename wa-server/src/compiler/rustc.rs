@@ -6,7 +6,7 @@ pub struct Rustc<S: SandBox> {
 }
 
 impl<S: SandBox> Compiler for Rustc<S> {
-    fn compile(&self, task: CompileTask, limit: Limit) -> WaResult<TargetStatus> {
+    fn compile(&self, task: CompileTask, limit: Option<Limit>) -> WaResult<TargetStatus> {
         let args: Vec<&str> = vec![
             task.source_path,
             "-o",
@@ -22,7 +22,7 @@ impl<S: SandBox> Compiler for Rustc<S> {
             args: &args,
             stdin: None,
             stdout: None,
-            stderr: task.ce_message_path,
+            stderr: Some(task.ce_message_path),
         };
 
         self.sandbox.run(target, limit)
@@ -39,10 +39,10 @@ fn test_rustc() {
     const HELLO_PATH: &str = "../assets/hello-rustc.rs";
 
     let task = CompileTask {
-        working_dir: "./",
+        working_dir: Path::new("."),
         source_path: HELLO_PATH,
         binary_path: "../temp/hello-rustc",
-        ce_message_path: Some("../temp/ce-rustc.txt"),
+        ce_message_path: "../temp/ce-rustc.txt",
     };
 
     let ret = compiler.compile(task, Limit::no_effect());

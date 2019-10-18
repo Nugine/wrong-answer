@@ -1,4 +1,4 @@
-use crate::types::{Limit, MonitorErrorKind, SandBox, Target, TargetStatus, WaError, WaResult};
+use crate::types::*;
 use num_traits::FromPrimitive;
 use std::process::Command;
 use std::process::Stdio;
@@ -9,8 +9,7 @@ const MONITOR_PATH: &str = "wa-monitor";
 const NULL_DEVICE: &str = "/dev/null";
 
 impl SandBox for BareMonitorSandBox {
-    /// limit: no effect
-    fn run(&self, target: Target, _limit: Limit) -> WaResult<TargetStatus> {
+    fn run(&self, target: Target, _limit: Option<Limit>) -> WaResult<TargetStatus> {
         let mut command = Command::new(MONITOR_PATH);
         command.current_dir(target.working_dir);
 
@@ -53,7 +52,7 @@ fn test_bare_monitor() {
 
     let ret = sandbox.run(
         Target {
-            working_dir: "./",
+            working_dir: Path::new("."),
             bin: "ls",
             args: &vec![],
             stdin: None,
@@ -67,7 +66,7 @@ fn test_bare_monitor() {
 
     let ret = sandbox.run(
         Target {
-            working_dir: "./",
+            working_dir: Path::new("."),
             bin: "qwertyuiop",
             args: &vec![],
             stdin: None,

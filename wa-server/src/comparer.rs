@@ -7,7 +7,7 @@ pub struct SimpleComparer {
 }
 
 impl Comparer for SimpleComparer {
-    fn compare(&self, task: CompareTask, _limit: Limit) -> WaResult<Comparision> {
+    fn compare(&self, task: CompareTask, _limit: Option<Limit>) -> WaResult<Comparision> {
         let mut std_reader = BufReader::new(File::open(task.stdout_path)?);
         let mut user_reader = BufReader::new(File::open(task.userout_path)?);
 
@@ -78,6 +78,7 @@ fn test_simple_comparer() {
     use std::fs::File;
     use std::io::Write;
     use Comparision::*;
+    use std::path::Path;
 
     let mut comparer = SimpleComparer {
         ignore_trailing_space: true,
@@ -92,7 +93,7 @@ fn test_simple_comparer() {
             drop((stdout, user));
             let ret = comparer.compare(
                 CompareTask {
-                    working_dir: "",
+                    working_dir: Path::new("."),
                     stdin_path: "",
                     stdout_path: "../temp/stdout.out",
                     userout_path: "../temp/userout.out",

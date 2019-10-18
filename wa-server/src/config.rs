@@ -2,11 +2,15 @@ use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
+use crate::types::KiloByte;
 
 #[derive(Deserialize)]
-
 pub struct Config {
     pub redis_url: String,
+    pub ce_filename: String,
+    pub output_limit:KiloByte,
+    pub memory_hard_limit: KiloByte,
+    pub data_dir: String,
 }
 
 const CONFIG_ENV_KEY: &str = "WA_CONFIG_PATH";

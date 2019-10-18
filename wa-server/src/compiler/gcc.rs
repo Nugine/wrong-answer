@@ -9,7 +9,7 @@ pub struct Gcc<S: SandBox> {
 }
 
 impl<S: SandBox> Compiler for Gcc<S> {
-    fn compile(&self, task: CompileTask, limit: Limit) -> WaResult<TargetStatus> {
+    fn compile(&self, task: CompileTask, limit: Option<Limit>) -> WaResult<TargetStatus> {
         let bin = if self.is_cpp { "g++" } else { "gcc" };
         let std = &format!("-std={}", self.std);
         let args = vec![
@@ -27,7 +27,7 @@ impl<S: SandBox> Compiler for Gcc<S> {
             args: &args,
             stdin: None,
             stdout: None,
-            stderr: task.ce_message_path,
+            stderr: Some(task.ce_message_path),
         };
 
         self.sandbox.run(target, limit)
@@ -46,10 +46,10 @@ fn test_gcc() {
     const HELLO_PATH: &str = "../assets/hello-gcc.c";
 
     let task = CompileTask {
-        working_dir: "./",
+        working_dir: Path::new("."),
         source_path: HELLO_PATH,
         binary_path: "../temp/hello-gcc",
-        ce_message_path: Some("../temp/ce-gcc.txt"),
+        ce_message_path: "../temp/ce-gcc.txt",
     };
 
     let ret = compiler.compile(task, Limit::no_effect());
@@ -69,10 +69,10 @@ fn test_gpp() {
     const HELLO_PATH: &str = "../assets/hello-g++.cpp";
 
     let task = CompileTask {
-        working_dir: "./",
+        working_dir: Path::new("."),
         source_path: HELLO_PATH,
         binary_path: "../temp/hello-g++",
-        ce_message_path: Some("../temp/ce-g++.txt"),
+        ce_message_path: "../temp/ce-g++.txt",
     };
 
     let ret = compiler.compile(task, Limit::no_effect());
