@@ -7,3 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+wa-monitor = { path = "../wa-monitor" }
+thiserror = "1.0.2"
+r2d2_redis = "0.12.0"
+r2d2 = "0.8.5"
+redis = "0.13.0"
