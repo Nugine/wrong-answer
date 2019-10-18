@@ -33,6 +33,7 @@ pub struct Submission {
     pub lang: Language,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JudgeStatus {
     Pending,
     Queuing,
@@ -60,7 +61,7 @@ pub struct JudgeCaseResult {
 pub struct JudgeResult {
     pub time: MilliSecond,
     pub memory: KiloByte,
-    pub compile_message: String, // compile error message
+    pub compile_message: Option<String>, // compile error message
     pub cases: Vec<JudgeCaseResult>,
 }
 
@@ -77,21 +78,50 @@ pub enum Comparision {
     PE = 2,
 }
 
-
-impl Submission{
-    pub fn update(&self,status: JudgeStatus)->Update{
-        Update{
+impl Submission {
+    pub fn update(&self, status: JudgeStatus) -> Update {
+        Update {
             submission_id: self.id,
             status,
-            result: None
+            result: None,
         }
     }
 
-    pub fn final_update(&self, status: JudgeStatus, result: JudgeResult)->Update{
-        Update{
+    pub fn final_update(&self, status: JudgeStatus, result: JudgeResult) -> Update {
+        Update {
             submission_id: self.id,
             status,
-            result: Some(result)
+            result: Some(result),
+        }
+    }
+}
+
+impl JudgeResult {
+    pub fn zero() -> Self {
+        Self {
+            time: 0,
+            memory: 0,
+            compile_message: None,
+            cases: vec![],
+        }
+    }
+
+    pub fn from_ce(msg: String) -> Self {
+        Self {
+            time: 0,
+            memory: 0,
+            compile_message: Some(msg),
+            cases: vec![],
+        }
+    }
+}
+
+impl JudgeCaseResult {
+    pub fn system_error() -> Self {
+        Self {
+            time: 0,
+            memory: 0,
+            status: JudgeStatus::SE,
         }
     }
 }

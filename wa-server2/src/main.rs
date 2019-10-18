@@ -1,9 +1,12 @@
+mod config;
 mod lang;
+mod redis;
 mod sandbox;
+mod threads;
 mod types;
 mod utils;
-mod threads;
-mod redis;
+
+pub use config::GLOBAL_CONFIG;
 
 #[macro_export]
 macro_rules! handle {
@@ -26,7 +29,6 @@ macro_rules! handle {
         }
     }};
 }
-
 
 fn main() {
     println!("Hello, world!");
