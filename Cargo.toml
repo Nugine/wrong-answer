@@ -2,6 +2,5 @@
 
 members = [
     "wa-monitor",
-    "wa-server",
     "wa-server2"
 ]

@@ -116,7 +116,7 @@ impl Target {
             check_os_error!(ret, MonitorErrorKind::Wait4Error);
         }
 
-        let real_time = t0.elapsed().as_micros() as u64;
+        let real_time = t0.elapsed().as_millis() as u64;
         let (code, signal) = {
             let exited = libc::WIFEXITED(status);
             if exited {
