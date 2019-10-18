@@ -31,10 +31,10 @@ type KiloByte = u64;
 pub struct TargetStatus {
     pub code: Option<i32>,
     pub signal: Option<i32>,
-    pub real_time: MilliSecond, 
-    pub user_time: MilliSecond, 
-    pub sys_time: MilliSecond, 
-    pub memory: KiloByte, 
+    pub real_time: MilliSecond,
+    pub user_time: MilliSecond,
+    pub sys_time: MilliSecond,
+    pub memory: KiloByte,
 }
 
 use std::fmt::{self, Display};

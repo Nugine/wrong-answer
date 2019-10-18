@@ -1,6 +1,6 @@
 use super::unit::*;
 
-#[derive(Debug,Clone,Copy,PartialEq,Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Language {
     C11,
     C89,
@@ -15,20 +15,20 @@ pub enum Language {
     Rust,
 }
 
-pub enum JudgeType{
+pub enum JudgeType {
     Strict,
     IgnoreTrialingSpace,
     SpecialJudge,
     Interactive,
 }
 
-pub struct Submission{
+pub struct Submission {
     pub id: u64,
     pub problem_id: u64,
     pub judge_type: JudgeType,
     pub time_limit: Second,
     pub memory_limit: MegaByte,
-    pub case_num:  u32,
+    pub case_num: u32,
     pub source_code: String,
     pub lang: Language,
 }
@@ -64,8 +64,15 @@ pub struct JudgeResult {
     pub cases: Vec<JudgeCaseResult>,
 }
 
-pub struct Update{
+pub struct Update {
     pub submission_id: u64,
     pub status: JudgeStatus,
-    pub result: Option<JudgeResult>
+    pub result: Option<JudgeResult>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Comparision {
+    AC = 0,
+    WA = 1,
+    PE = 2,
 }

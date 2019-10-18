@@ -1,4 +1,4 @@
-mod unit{
+mod unit {
     pub type KiloByte = u64;
     pub type MegaByte = u64;
     pub type Second = u64;
@@ -6,10 +6,10 @@ mod unit{
 }
 mod judge;
 
-pub use unit::*;
 pub use judge::*;
+pub use std::path::{Path, PathBuf};
+pub use unit::*;
 pub use wa_monitor::types::{MonitorErrorKind, TargetStatus};
-pub use std::path::{PathBuf,Path};
 
 use std::fmt::{self, Display};
 use thiserror::Error;
@@ -26,7 +26,7 @@ pub enum WaError {
         #[source]
         redis::RedisError,
     ),
-    Channel(&'static str)
+    Channel(&'static str),
 }
 
 pub type WaResult<T> = Result<T, WaError>;

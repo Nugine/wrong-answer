@@ -126,8 +126,8 @@ impl Target {
             }
         };
 
-        let user_time = (ru.ru_utime.tv_sec as u64 * 1000) + (ru.ru_utime.tv_usec as u64/1000);
-        let sys_time = (ru.ru_stime.tv_sec as u64 * 1000) + (ru.ru_stime.tv_usec as u64/1000);
+        let user_time = (ru.ru_utime.tv_sec as u64 * 1000) + (ru.ru_utime.tv_usec as u64 / 1000);
+        let sys_time = (ru.ru_stime.tv_sec as u64 * 1000) + (ru.ru_stime.tv_usec as u64 / 1000);
         let memory = ru.ru_maxrss as u64;
 
         TargetStatus {
