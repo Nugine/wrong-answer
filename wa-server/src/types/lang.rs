@@ -9,7 +9,7 @@ pub enum Language {
     Cpp14,
     Cpp17,
     Rust,
-    // Java,
+    Java,
     // Python3,
     // JavaScript,
     // TypeScript,

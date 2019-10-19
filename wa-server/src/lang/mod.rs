@@ -1,7 +1,9 @@
 mod gcc;
+mod java;
 mod rustc;
-pub use gcc::Gcc;
-pub use rustc::Rustc;
+
+use gcc::Gcc;
+use rustc::Rustc;
 
 use crate::types::Language;
 use crate::types::LanguageBroker;
@@ -36,6 +38,7 @@ impl Language {
                 std: "c++17",
             }),
             Rust => Box::new(Rustc),
+            Java => Box::new(java::Java),
         }
     }
 }

@@ -138,14 +138,14 @@ impl Update {
 #[test]
 fn print_mock_submission() {
     let sm = Submission {
-        id: 46,
+        id: 47,
         problem_id: 1001,
         judge_type: JudgeType::Strict,
         time_limit: 1,
         memory_limit: 32,
         case_num: 1,
-        source_code: include_str!("../../../assets/hello-rustc.rs").into(),
-        lang: Language::Rust,
+        source_code: include_str!("../../../assets/hello-javac/Main.java").into(),
+        lang: Language::Java,
     };
     let value = serde_json::to_string(&sm).unwrap();
     println!("{:?}", value);
