@@ -9,6 +9,7 @@ pub struct Worker<S: SandBox> {
     pub update_sender: Sender<Update>,
     pub workspace: PathBuf,
     pub sandbox: S,
+    pub data_lock: Arc<DataLock>,
 }
 
 impl<S> Worker<S>
@@ -41,6 +42,7 @@ where
                 // NOTE: SE
             }
 
+            // don't remove working_dir in debug mode
             if !cfg!(debug_assertions) {
                 handle!(@custom
                     std::fs::remove_dir_all(&working_dir),
@@ -84,6 +86,8 @@ where
 
         // Compiling -> Judging
         self.try_send_update(submission.update(JudgeStatus::Judging))?;
+
+        let data_guard = self.data_lock.read().expect("data lock error");
 
         let data_dir: &Path = &GLOBAL_CONFIG.data_dir;
         let mut case_task = CaseTask {
@@ -137,6 +141,7 @@ where
             case_task.stdin_path.pop();
             case_task.stdout_path.pop();
         }
+        drop(data_guard);
 
         self.try_send_update(submission.final_update(status, result))
     }

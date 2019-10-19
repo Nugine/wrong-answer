@@ -12,6 +12,8 @@
         "temp_queue_key": "tq",
         "submission_key_prefix": "sm",
         "submission_status_key_prefix": "sms",
-        "judge_result_queue_key": "jrq"
+        "judge_result_queue_key": "jrq",
+        "data_time_map_key": "dtm",
+        "data_key_prefix": "data"
     }
 }

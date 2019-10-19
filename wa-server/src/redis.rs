@@ -11,6 +11,7 @@ pub struct RedisBroker {
     submission_queue_key: String,
     temp_queue_key: String,
     judge_result_queue_key: String,
+    data_time_map_key: String,
 }
 
 impl RedisBroker {
@@ -30,11 +31,14 @@ impl RedisBroker {
         let judge_result_queue_key =
             format!("{}-{}", redis.key_prefix, redis.judge_result_queue_key);
 
+        let data_time_map_key = format!("{}-{}", redis.key_prefix, redis.data_time_map_key);
+
         Self {
             pool,
             submission_queue_key,
             temp_queue_key,
             judge_result_queue_key,
+            data_time_map_key,
         }
     }
 
@@ -82,5 +86,24 @@ impl RedisBroker {
                 .query(conn)?;
         }
         Ok(())
+    }
+
+    pub fn get_data_timestamp(&self, problem_id: u64) -> WaResult<u64> {
+        let conn: &mut redis::Connection = &mut *self.pool.get()?;
+        let timestamp: u64 = conn.hget(&self.data_time_map_key, problem_id)?;
+        Ok(timestamp)
+    }
+
+    pub fn get_problem_data(&self, problem_id: u64) -> WaResult<HashMap<String, String>> {
+        let conn: &mut redis::Connection = &mut *self.pool.get()?;
+        let redis: &RedisConfig = &GLOBAL_CONFIG.redis;
+
+        let key = format!(
+            "{}-{}-{}",
+            redis.key_prefix, redis.data_key_prefix, problem_id,
+        );
+
+        let map: HashMap<String, String> = conn.hgetall(key)?;
+        Ok(map)
     }
 }

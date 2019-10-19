@@ -17,7 +17,10 @@ pub use num_traits::FromPrimitive;
 pub use serde::{Deserialize, Serialize};
 pub use std::collections::HashMap;
 pub use std::path::{Path, PathBuf};
+pub use std::sync::{Arc, RwLock};
 pub use wa_monitor::types::{MonitorErrorKind, TargetStatus};
+
+pub type DataLock = RwLock<HashMap<u64, u64>>;
 
 use std::fmt::{self, Display};
 use thiserror::Error;

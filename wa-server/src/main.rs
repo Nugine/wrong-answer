@@ -30,8 +30,10 @@ macro_rules! handle {
     }};
 }
 
+use crate::config::load_data_time;
 use crate::redis::RedisBroker;
 use crate::sandbox::BareMonitorSandBox;
+use crate::types::{Arc, RwLock};
 use std::thread::{spawn, JoinHandle};
 use threads::{Listener, Updater, Worker};
 
@@ -43,10 +45,14 @@ fn main() {
     let submission_channel = crossbeam_channel::bounded(0);
     let update_channel = crossbeam_channel::unbounded();
 
+    let data_time = load_data_time().expect("fail to load data time");
+    let data_lock = Arc::new(RwLock::new(data_time));
+
     let listener = Listener {
         redis: redis.clone(),
         submission_sender: submission_channel.0,
         update_sender: update_channel.0.clone(),
+        data_lock: data_lock.clone(),
     };
 
     let updater = Updater {
@@ -59,7 +65,8 @@ fn main() {
             submission_receiver: submission_channel.1.clone(),
             update_sender: update_channel.0.clone(),
             workspace: GLOBAL_CONFIG.workspace.clone(),
-            sandbox: BareMonitorSandBox
+            sandbox: BareMonitorSandBox,
+            data_lock: data_lock.clone()
         };
         GLOBAL_CONFIG.worker_num as usize
     ];
@@ -67,6 +74,7 @@ fn main() {
     drop(submission_channel.1);
     drop(update_channel.0);
     drop(redis);
+    drop(data_lock);
 
     let listener: JoinHandle<()> = spawn(listener.listen());
     let updater: JoinHandle<()> = spawn(updater.update());
