@@ -1,34 +1,29 @@
 use crate::types::*;
 
-pub struct Gcc {
-    pub is_cpp: bool,
-    pub std: &'static str,
-}
+pub struct Rustc;
 
-impl LanguageBroker for Gcc {
+impl LanguageBroker for Rustc {
     fn filename(&self) -> (&'static str, Option<&'static str>) {
-        (if self.is_cpp { "src.cpp" } else { "src.c" }, Some("src"))
+        ("src.rs", Some("src"))
     }
 
-    /// `gcc   src.c -o src -O2 -static -std=$STD`
-    /// `g++ src.cpp -o src -O2 -static -std=$STD`
+    /// `rustc src.rs -o src -O --edition 2018`
     fn compile<'a>(&self, working_dir: &'a Path, ce_filename: &'a str) -> Target<'a> {
-        let gcc = if self.is_cpp { "g++" } else { "gcc" }.into();
+        let rustc = "rustc".into();
         let (src, bin) = self.filename();
-        let std = format!("-std={}", self.std);
 
         let args = vec![
             src.into(),
             "-o".into(),
             bin.unwrap().into(),
-            "-O2".into(),
-            "-static".into(),
-            std,
+            "-O".into(),
+            "--edition".into(),
+            "2018".into(),
         ];
 
         Target {
             working_dir,
-            bin: gcc,
+            bin: rustc,
             args,
             stdin: None,
             stdout: None,

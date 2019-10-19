@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum JudgeType {
     Strict,
     IgnoreTrialingSpace,
@@ -138,14 +138,14 @@ impl Update {
 #[test]
 fn print_mock_submission() {
     let sm = Submission {
-        id: 42,
+        id: 46,
         problem_id: 1001,
         judge_type: JudgeType::Strict,
         time_limit: 1,
         memory_limit: 32,
         case_num: 1,
-        source_code: include_str!("../../../assets/hello-gcc.c").into(),
-        lang: Language::C99,
+        source_code: include_str!("../../../assets/hello-rustc.rs").into(),
+        lang: Language::Rust,
     };
     let value = serde_json::to_string(&sm).unwrap();
     println!("{:?}", value);

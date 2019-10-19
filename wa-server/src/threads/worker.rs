@@ -99,13 +99,15 @@ where
             stdin_path: data_dir.join(submission.problem_id.to_string()),
             stdout_path: data_dir.join(submission.problem_id.to_string()),
             userout_path: working_dir.join("userout.out"),
-            act_path: match submission.judge_type {
-                JudgeType::Interactive => Some(working_dir.join("act")),
-                _ => None,
+            act_path: if submission.judge_type == JudgeType::Interactive {
+                Some(working_dir.join("act"))
+            } else {
+                None
             },
-            spj_path: match submission.judge_type {
-                JudgeType::SpecialJudge => Some(working_dir.join("spj")),
-                _ => None,
+            spj_path: if submission.judge_type == JudgeType::SpecialJudge {
+                Some(working_dir.join("spj"))
+            } else {
+                None
             },
         };
 

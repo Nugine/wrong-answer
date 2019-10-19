@@ -1,5 +1,7 @@
 mod gcc;
+mod rustc;
 pub use gcc::Gcc;
+pub use rustc::Rustc;
 
 use crate::types::Language;
 use crate::types::LanguageBroker;
@@ -33,6 +35,7 @@ impl Language {
                 is_cpp: true,
                 std: "c++17",
             }),
+            Rust => Box::new(Rustc),
         }
     }
 }
