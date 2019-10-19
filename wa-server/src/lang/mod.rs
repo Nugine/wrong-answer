@@ -1,5 +1,6 @@
 mod gcc;
 mod java;
+mod nodejs;
 mod python3;
 mod rustc;
 
@@ -40,6 +41,7 @@ impl Language {
             Rust => Box::new(rustc::Rustc),
             Java => Box::new(java::Java),
             Python3 => Box::new(python3::Python3),
+            JavaScript => Box::new(nodejs::Nodejs),
         }
     }
 }

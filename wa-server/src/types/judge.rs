@@ -138,14 +138,14 @@ impl Update {
 #[test]
 fn print_mock_submission() {
     let sm = Submission {
-        id: 48,
+        id: 49,
         problem_id: 1001,
         judge_type: JudgeType::Strict,
         time_limit: 1,
         memory_limit: 32,
         case_num: 1,
-        source_code: include_str!("../../../assets/hello-py3.py").into(),
-        lang: Language::Python3,
+        source_code: include_str!("../../../assets/hello-nodejs.js").into(),
+        lang: Language::JavaScript,
     };
     let value = serde_json::to_string(&sm).unwrap();
     println!("{:?}", value);

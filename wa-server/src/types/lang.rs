@@ -11,7 +11,7 @@ pub enum Language {
     Rust,
     Java,
     Python3,
-    // JavaScript,
+    JavaScript,
     // TypeScript,
 }
 
