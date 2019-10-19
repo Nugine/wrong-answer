@@ -45,24 +45,33 @@ impl Listener {
     pub fn sync_data(&self, problem_id: u64) -> WaResult<()> {
         let remote_timestamp = self.redis.get_data_timestamp(problem_id)?;
 
-        let mut guard = self.data_lock.write().expect("data lock error");
-        let map: &mut HashMap<u64, u64> = &mut *guard;
-        let local_timestamp = match map.get(&problem_id) {
-            Some(&t) => t,
-            None => 0,
+        let guard = self.data_lock.write().expect("data lock error");
+
+        let mut data_path: PathBuf = GLOBAL_CONFIG.data_dir.join(problem_id.to_string());
+        const TIMESTAMP_FILENAME: &str = "timestamp";
+
+        let needs_sync = if data_path.exists() {
+            data_path.push(TIMESTAMP_FILENAME);
+
+            if data_path.exists() {
+                let timestamp = std::fs::read_to_string(&data_path)?;
+                let local_timestamp: u64 = timestamp.trim().parse().expect("invalid timestamp");
+                local_timestamp < remote_timestamp
+            } else {
+                true
+            }
+        } else {
+            std::fs::create_dir_all(&data_path)?;
+            true
         };
 
-        if local_timestamp >= remote_timestamp {
+        if !needs_sync {
             return Ok(());
         }
 
         log::info!("sync data: problem id = {}", problem_id);
 
         let data = self.redis.get_problem_data(problem_id)?;
-        let data_path: PathBuf = GLOBAL_CONFIG.data_dir.join(problem_id.to_string());
-        if !data_path.exists() {
-            std::fs::create_dir_all(&data_path)?;
-        }
 
         let mut file_path = data_path;
         for (filename, text) in data {
@@ -71,10 +80,10 @@ impl Listener {
             file_path.pop();
         }
 
-        file_path.push(crate::config::DATA_TIME_FILENAME);
+        file_path.push(TIMESTAMP_FILENAME);
         std::fs::write(&file_path, remote_timestamp.to_string())?;
-        map.insert(problem_id, remote_timestamp);
 
+        drop(guard);
         Ok(())
     }
 }

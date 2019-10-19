@@ -30,7 +30,6 @@ macro_rules! handle {
     }};
 }
 
-use crate::config::load_data_time;
 use crate::redis::RedisBroker;
 use crate::sandbox::BareMonitorSandBox;
 use crate::types::{Arc, RwLock};
@@ -45,8 +44,7 @@ fn main() {
     let submission_channel = crossbeam_channel::bounded(0);
     let update_channel = crossbeam_channel::unbounded();
 
-    let data_time = load_data_time().expect("fail to load data time");
-    let data_lock = Arc::new(RwLock::new(data_time));
+    let data_lock = Arc::new(RwLock::new(()));
 
     let listener = Listener {
         redis: redis.clone(),

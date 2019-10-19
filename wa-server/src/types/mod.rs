@@ -20,7 +20,7 @@ pub use std::path::{Path, PathBuf};
 pub use std::sync::{Arc, RwLock};
 pub use wa_monitor::types::{MonitorErrorKind, TargetStatus};
 
-pub type DataLock = RwLock<HashMap<u64, u64>>;
+pub type DataLock = RwLock<()>;
 
 use std::fmt::{self, Display};
 use thiserror::Error;

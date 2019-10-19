@@ -50,32 +50,3 @@ lazy_static! {
         config
     };
 }
-
-pub const DATA_TIME_FILENAME: &str = "timestamp";
-
-pub fn load_data_time() -> WaResult<HashMap<u64, u64>> {
-    let entries = std::fs::read_dir(&GLOBAL_CONFIG.data_dir)?;
-
-    let mut map = HashMap::new();
-
-    for entry in entries {
-        let entry = entry?;
-        let mut path = entry.path();
-        let problem_id: u64 = path
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .parse()
-            .expect("invalid problem id");
-        path.push(DATA_TIME_FILENAME);
-        let timestamp = std::fs::read_to_string(&path).map_err(|e| {
-            log::error!("not found: {:?}", path);
-            e
-        })?;
-        let timestamp = timestamp.trim().parse().expect("invalid timestamp");
-        map.insert(problem_id, timestamp);
-    }
-
-    Ok(map)
-}
