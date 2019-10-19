@@ -67,22 +67,24 @@ where
         // compile
         let ce_filename = "ce.txt";
         let target = broker.compile(working_dir, ce_filename);
-        let limit = GLOBAL_CONFIG.compile_limit.as_ref();
-        let status = self.sandbox.run(target, limit)?;
-        match status.code {
-            Some(0) => {}
-            Some(_) => {
-                let msg = std::fs::read_to_string(working_dir.join(ce_filename))?;
-                let result = JudgeResult::from_ce(msg);
-                let update = submission.final_update(JudgeStatus::CE, result);
-                return self.try_send_update(update); // NOTE: CE
-            }
-            None => {
-                let result = JudgeResult::zero();
-                let update = submission.final_update(JudgeStatus::CLE, result);
-                return self.try_send_update(update); // NOTE: CLE
-            }
-        };
+        if let Some(target) = target {
+            let limit = GLOBAL_CONFIG.compile_limit.as_ref();
+            let status = self.sandbox.run(target, limit)?;
+            match status.code {
+                Some(0) => {}
+                Some(_) => {
+                    let msg = std::fs::read_to_string(working_dir.join(ce_filename))?;
+                    let result = JudgeResult::from_ce(msg);
+                    let update = submission.final_update(JudgeStatus::CE, result);
+                    return self.try_send_update(update); // NOTE: CE
+                }
+                None => {
+                    let result = JudgeResult::zero();
+                    let update = submission.final_update(JudgeStatus::CLE, result);
+                    return self.try_send_update(update); // NOTE: CLE
+                }
+            };
+        }
 
         // Compiling -> Judging
         self.try_send_update(submission.update(JudgeStatus::Judging))?;

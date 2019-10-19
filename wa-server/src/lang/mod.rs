@@ -1,9 +1,9 @@
 mod gcc;
 mod java;
+mod python3;
 mod rustc;
 
 use gcc::Gcc;
-use rustc::Rustc;
 
 use crate::types::Language;
 use crate::types::LanguageBroker;
@@ -37,8 +37,9 @@ impl Language {
                 is_cpp: true,
                 std: "c++17",
             }),
-            Rust => Box::new(Rustc),
+            Rust => Box::new(rustc::Rustc),
             Java => Box::new(java::Java),
+            Python3 => Box::new(python3::Python3),
         }
     }
 }

@@ -8,7 +8,7 @@ impl LanguageBroker for Rustc {
     }
 
     /// `rustc src.rs -o src -O --edition 2018`
-    fn compile<'a>(&self, working_dir: &'a Path, ce_filename: &'a str) -> Target<'a> {
+    fn compile<'a>(&self, working_dir: &'a Path, ce_filename: &'a str) -> Option<Target<'a>> {
         let rustc = "rustc".into();
         let (src, bin) = self.filename();
 
@@ -21,14 +21,14 @@ impl LanguageBroker for Rustc {
             "2018".into(),
         ];
 
-        Target {
+        Some(Target {
             working_dir,
             bin: rustc,
             args,
             stdin: None,
             stdout: None,
             stderr: Some(Path::new(ce_filename)),
-        }
+        })
     }
 
     fn run_case<'a>(&self, task: &'a CaseTask) -> Target<'a> {

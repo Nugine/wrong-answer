@@ -8,7 +8,7 @@ impl LanguageBroker for Java {
     }
 
     /// `javac -encoding UTF-8 -sourcepath . -d . Main.java`
-    fn compile<'a>(&self, working_dir: &'a Path, ce_filename: &'a str) -> Target<'a> {
+    fn compile<'a>(&self, working_dir: &'a Path, ce_filename: &'a str) -> Option<Target<'a>> {
         let (src, _) = self.filename();
 
         let args = vec![
@@ -21,14 +21,14 @@ impl LanguageBroker for Java {
             src.into(),
         ];
 
-        Target {
+        Some(Target {
             working_dir,
             bin: "javac".into(),
             args,
             stdin: None,
             stdout: None,
             stderr: Some(Path::new(ce_filename)),
-        }
+        })
     }
 
     fn run_case<'a>(&self, task: &'a CaseTask) -> Target<'a> {

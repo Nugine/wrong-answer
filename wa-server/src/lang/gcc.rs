@@ -12,7 +12,7 @@ impl LanguageBroker for Gcc {
 
     /// `gcc   src.c -o src -O2 -static -std=$STD`
     /// `g++ src.cpp -o src -O2 -static -std=$STD`
-    fn compile<'a>(&self, working_dir: &'a Path, ce_filename: &'a str) -> Target<'a> {
+    fn compile<'a>(&self, working_dir: &'a Path, ce_filename: &'a str) -> Option<Target<'a>> {
         let gcc = if self.is_cpp { "g++" } else { "gcc" }.into();
         let (src, bin) = self.filename();
         let std = format!("-std={}", self.std);
@@ -26,14 +26,14 @@ impl LanguageBroker for Gcc {
             std,
         ];
 
-        Target {
+        Some(Target {
             working_dir,
             bin: gcc,
             args,
             stdin: None,
             stdout: None,
             stderr: Some(Path::new(ce_filename)),
-        }
+        })
     }
 
     fn run_case<'a>(&self, task: &'a CaseTask) -> Target<'a> {
