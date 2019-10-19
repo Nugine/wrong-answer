@@ -15,6 +15,12 @@ impl Updater {
                 "update senders are disconnected: {}"
             );
 
+            log::info!(
+                "update: submission id = {:?}, status = {:?}",
+                update.submission_id,
+                update.status
+            );
+
             handle!(self.redis.update_submission(update), "redis error: {}");
         }
     }

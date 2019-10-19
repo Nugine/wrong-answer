@@ -1,6 +1,5 @@
 use super::*;
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Language {
     C11,
@@ -21,4 +20,3 @@ pub trait LanguageBroker {
     fn compile<'a>(&self, working_dir: &'a Path, ce_filename: &'static str) -> Target<'a>;
     fn run_case<'a>(&self, task: &'a CaseTask) -> Target<'a>;
 }
-

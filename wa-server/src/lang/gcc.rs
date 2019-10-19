@@ -12,19 +12,15 @@ impl LanguageBroker for Gcc {
 
     /// `gcc   src.c -o src -O2 -static -std=$STD`
     /// `g++ src.cpp -o src -O2 -static -std=$STD`
-    fn compile<'a>(
-        &self,
-        working_dir: &'a Path,
-        ce_filename: &'static str,
-    ) -> Target<'a> {
-        let gcc = if self.is_cpp { "g++" } else { "gcc" };
-        let (_, bin) = self.filename();
+    fn compile<'a>(&self, working_dir: &'a Path, ce_filename: &'static str) -> Target<'a> {
+        let gcc = if self.is_cpp { "g++" } else { "gcc" }.into();
+        let (src, bin) = self.filename();
         let std = format!("-std={}", self.std);
 
         let args = vec![
-            bin.unwrap().into(),
+            src.into(),
             "-o".into(),
-            "src".into(),
+            bin.unwrap().into(),
             "-O2".into(),
             "-static".into(),
             std,

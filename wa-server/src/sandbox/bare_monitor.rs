@@ -2,7 +2,7 @@ use crate::types::*;
 use std::process::Command;
 use std::process::Stdio;
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct BareMonitorSandBox;
 
 const MONITOR_PATH: &str = "wa-monitor";
@@ -40,6 +40,8 @@ impl SandBox for BareMonitorSandBox {
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
 
+        log::info!("sandbox run: {:?}", command);
+
         let child = command.spawn()?;
 
         let output = child.wait_with_output()?;
@@ -71,7 +73,7 @@ fn test_bare_monitor() {
     let ret = sandbox.run(
         Target {
             working_dir: Path::new("."),
-            bin: "ls",
+            bin: "ls".into(),
             args: vec![],
             stdin: None,
             stdout: None,
@@ -85,7 +87,7 @@ fn test_bare_monitor() {
     let ret = sandbox.run(
         Target {
             working_dir: Path::new("."),
-            bin: "qwertyuiop",
+            bin: "qwertyuiop".into(),
             args: vec![],
             stdin: None,
             stdout: None,

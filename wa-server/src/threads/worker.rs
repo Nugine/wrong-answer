@@ -1,18 +1,19 @@
 use super::*;
 use crate::types::*;
-use crate::GLOBAL_CONFIG;
 use crate::utils::compare;
+use crate::GLOBAL_CONFIG;
 
 #[derive(Clone)]
-pub struct Worker<S:SandBox> {
+pub struct Worker<S: SandBox> {
     pub submission_receiver: Receiver<Submission>,
     pub update_sender: Sender<Update>,
     pub workspace: PathBuf,
-    pub sandbox: S
+    pub sandbox: S,
 }
 
-impl<S> Worker<S> 
-where S: SandBox+Send+'static
+impl<S> Worker<S>
+where
+    S: SandBox + Send + 'static,
 {
     pub fn work(self) -> impl Fn() + Send + 'static {
         move || loop {
@@ -40,11 +41,13 @@ where S: SandBox+Send+'static
                 // NOTE: SE
             }
 
-            handle!(@custom
-                std::fs::remove_dir_all(&working_dir),
-                "can not remove dir: {:?}",
-                &working_dir,
-            );
+            if !cfg!(debug_assertions) {
+                handle!(@custom
+                    std::fs::remove_dir_all(&working_dir),
+                    "can not remove dir: {:?}",
+                    &working_dir,
+                );
+            }
         }
     }
 
@@ -52,27 +55,27 @@ where S: SandBox+Send+'static
         let broker = submission.lang.get_broker();
 
         // save source code
-        let (src_filename,bin_filename) = broker.filename();
+        let (src_filename, bin_filename) = broker.filename();
         let src_path = working_dir.join(src_filename);
-        std::fs::write(src_path,&submission.source_code)?;
+        std::fs::write(src_path, &submission.source_code)?;
 
         // Queuing -> Compiling
         self.try_send_update(submission.update(JudgeStatus::Compiling))?;
 
         // compile
         let ce_filename = "ce.txt";
-        let target = broker.compile(working_dir,ce_filename);
+        let target = broker.compile(working_dir, ce_filename);
         let limit = GLOBAL_CONFIG.compile_limit.as_ref();
         let status = self.sandbox.run(target, limit)?;
-        match status.code{
-            Some(0)=>{},
-            Some(_)=>{
+        match status.code {
+            Some(0) => {}
+            Some(_) => {
                 let msg = std::fs::read_to_string(working_dir.join(ce_filename))?;
                 let result = JudgeResult::from_ce(msg);
                 let update = submission.final_update(JudgeStatus::CE, result);
                 return self.try_send_update(update); // NOTE: CE
             }
-            None=>{
+            None => {
                 let result = JudgeResult::zero();
                 let update = submission.final_update(JudgeStatus::CLE, result);
                 return self.try_send_update(update); // NOTE: CLE
@@ -89,8 +92,8 @@ where S: SandBox+Send+'static
             src_filename,
             bin_filename,
             case_index: 0,
-            stdin_path: data_dir.to_owned(),
-            stdout_path: data_dir.to_owned(),
+            stdin_path: data_dir.join(submission.problem_id.to_string()),
+            stdout_path: data_dir.join(submission.problem_id.to_string()),
             userout_path: working_dir.join("userout.out"),
             act_path: match submission.judge_type {
                 JudgeType::Interactive => Some(working_dir.join("act")),
@@ -106,23 +109,22 @@ where S: SandBox+Send+'static
         let mut result = JudgeResult::zero();
         let cases =
             (1..=submission.case_num).map(|i| (i, format!("{}.in", i), format!("{}.out", i)));
-        
+
         for (i, input, output) in cases {
-            case_task.case_index = i + 1;
+            case_task.case_index = i;
             case_task.stdin_path.push(input);
             case_task.stdout_path.push(output);
 
-            let res = self.run_case(broker.as_ref(), &case_task)
-                .map_err(|err|{
-                    log::error!(
-                        "system error: {}, submission_id = {}, problem_id = {}, case = {}",
-                        err,
-                        submission.id,
-                        submission.problem_id,
-                        case_task.case_index,
-                    );
-                    err
-                })?;
+            let res = self.run_case(broker.as_ref(), &case_task).map_err(|err| {
+                log::error!(
+                    "system error: {}, submission_id = {}, problem_id = {}, case = {}",
+                    err,
+                    submission.id,
+                    submission.problem_id,
+                    case_task.case_index,
+                );
+                err
+            })?;
 
             if res.status != JudgeStatus::AC {
                 status = res.status;
@@ -139,27 +141,29 @@ where S: SandBox+Send+'static
         self.try_send_update(submission.final_update(status, result))
     }
 
-    fn run_case(&self,broker: &dyn LanguageBroker, task: &CaseTask)->WaResult<JudgeCaseResult>{
+    fn run_case(&self, broker: &dyn LanguageBroker, task: &CaseTask) -> WaResult<JudgeCaseResult> {
         let target = broker.run_case(task);
         let limit = Limit::from_submission(&task.submission);
-        let target_status = self.sandbox.run(target,Some(&limit))?;
+        let target_status = self.sandbox.run(target, Some(&limit))?;
 
-        let (time,memory,status)=parse_status(&target_status,&limit);
+        let (time, memory, status) = parse_status(&target_status, &limit);
 
-        if let Some(status)= status{
-            return Ok(JudgeCaseResult{
-                time,memory,status
-            })
+        if let Some(status) = status {
+            return Ok(JudgeCaseResult {
+                time,
+                memory,
+                status,
+            });
         }
 
-        let status = if task.spj_path.is_some(){
+        let status = if task.spj_path.is_some() {
             let target = Target::spj(task);
-            let target_status = self.sandbox.run(target,Some(&limit))?;
-            match target_status.code{
+            let target_status = self.sandbox.run(target, Some(&limit))?;
+            match target_status.code {
                 Some(0) => JudgeStatus::AC,
                 Some(1) => JudgeStatus::WA,
                 Some(2) => JudgeStatus::PE,
-                _ =>{
+                _ => {
                     log::error!("special judge error: code = {:?}, signal = {:?}, submission_id = {}, case = {}",
                         target_status.code,
                         target_status.signal,
@@ -169,7 +173,7 @@ where S: SandBox+Send+'static
                     JudgeStatus::WA
                 }
             }
-        }else{
+        } else {
             let ignore_trailing_space = match task.submission.judge_type {
                 JudgeType::Strict => false,
                 JudgeType::IgnoreTrialingSpace => true,
@@ -179,10 +183,11 @@ where S: SandBox+Send+'static
             cmp.to_status()
         };
 
-        Ok(JudgeCaseResult{
-                time,memory,status
-            })
-
+        Ok(JudgeCaseResult {
+            time,
+            memory,
+            status,
+        })
     }
 
     fn send_update(&self, update: Update) {

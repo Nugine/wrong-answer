@@ -3,7 +3,7 @@ use crate::GLOBAL_CONFIG;
 
 pub struct Target<'a> {
     pub working_dir: &'a Path,
-    pub bin: &'a str,
+    pub bin: String,
     pub args: Vec<String>,
     pub stdin: Option<&'a Path>,
     pub stdout: Option<&'a Path>,
@@ -35,6 +35,39 @@ impl Limit {
                 .min(GLOBAL_CONFIG.memory_hard_limit)
                 .saturating_mul(1024),
             output: GLOBAL_CONFIG.output_hard_limit.saturating_mul(1024),
+        }
+    }
+}
+
+impl<'a> Target<'a> {
+    pub fn direct<'b>(task: &'b CaseTask) -> Target<'b> {
+        Target {
+            working_dir: task.working_dir,
+            bin: task
+                .working_dir
+                .join(task.bin_filename.unwrap())
+                .to_str()
+                .unwrap()
+                .to_owned(),
+            args: vec![],
+            stdin: Some(&task.stdin_path),
+            stdout: Some(&task.userout_path),
+            stderr: None,
+        }
+    }
+
+    pub fn spj<'b>(task: &'b CaseTask) -> Target<'b> {
+        Target {
+            working_dir: task.working_dir,
+            bin: task.spj_path.as_ref().unwrap().to_str().unwrap().to_owned(),
+            args: vec![
+                task.stdin_path.to_str().unwrap().to_owned(),
+                task.stdout_path.to_str().unwrap().to_owned(),
+                task.userout_path.to_str().unwrap().to_owned(),
+            ],
+            stdin: None,
+            stdout: None,
+            stderr: None,
         }
     }
 }

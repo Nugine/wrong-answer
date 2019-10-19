@@ -37,7 +37,7 @@ pub enum WaError {
     R2d2(
         #[from]
         #[source]
-        r2d2::Error
+        r2d2::Error,
     ),
     Channel(&'static str),
     Monitor(#[from] MonitorErrorKind),

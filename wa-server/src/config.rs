@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::BufReader;
 
 #[derive(Deserialize)]
-pub struct RedisConfig{
+pub struct RedisConfig {
     pub url: String,
     pub key_prefix: String,
     pub submission_queue_key: String,
@@ -23,10 +23,10 @@ pub struct Config {
 
     pub data_dir: PathBuf,
     pub workspace: PathBuf,
-    
+
     pub compile_limit: Option<Limit>,
 
-    pub worker_num: u32
+    pub worker_num: u32,
 }
 
 const CONFIG_ENV_KEY: &str = "WA_CONFIG_PATH";

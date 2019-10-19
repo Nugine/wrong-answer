@@ -129,36 +129,24 @@ impl Comparision {
     }
 }
 
-impl<'a> Target<'a> {
-    pub fn direct<'b>(task: &'b CaseTask) -> Target<'b> {
-        Target {
-            working_dir: task.working_dir,
-            bin: task.bin_filename.unwrap(),
-            args: vec![],
-            stdin: Some(&task.stdin_path),
-            stdout: Some(&task.userout_path),
-            stderr: None,
-        }
-    }
-
-    pub fn spj<'b>(task: &'b CaseTask) -> Target<'b> {
-        Target {
-            working_dir: task.working_dir,
-            bin: task.spj_path.as_ref().unwrap().to_str().unwrap(),
-            args: vec![
-                task.stdin_path.to_str().unwrap().to_owned(),
-                task.stdout_path.to_str().unwrap().to_owned(),
-                task.userout_path.to_str().unwrap().to_owned(),
-            ],
-            stdin: None,
-            stdout: None,
-            stderr: None,
-        }
-    }
-}
-
 impl Update {
     pub fn is_final(&self) -> bool {
         self.result.is_some()
     }
+}
+
+#[test]
+fn print_mock_submission() {
+    let sm = Submission {
+        id: 42,
+        problem_id: 1001,
+        judge_type: JudgeType::Strict,
+        time_limit: 1,
+        memory_limit: 32,
+        case_num: 1,
+        source_code: include_str!("../../../assets/hello-gcc.c").into(),
+        lang: Language::C99,
+    };
+    let value = serde_json::to_string(&sm).unwrap();
+    println!("{:?}", value);
 }
