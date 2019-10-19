@@ -1,24 +1,18 @@
 use crate::types::*;
 use lazy_static::lazy_static;
-use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
 
 #[derive(Deserialize)]
-pub struct CompileLimit {
-    pub time: Second,
-    pub memory: MegaByte,
-    pub output: MegaByte,
-    pub security_cfg_path: Option<PathBuf>,
-}
-
-#[derive(Deserialize)]
 pub struct Config {
     pub redis_url: String,
+
     pub output_hard_limit: MegaByte,
     pub memory_hard_limit: MegaByte,
+
     pub data_dir: PathBuf,
-    pub compile_limit: HashMap<Language, CompileLimit>,
+
+    pub compile_limit: Option<Limit>,
 }
 
 const CONFIG_ENV_KEY: &str = "WA_CONFIG_PATH";

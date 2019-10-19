@@ -1,21 +1,4 @@
-use super::unit::*;
-use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIter)]
-pub enum Language {
-    C11,
-    C89,
-    C99,
-    Cpp11,
-    Cpp14,
-    Cpp17,
-    // Rust,
-    // Java,
-    // Python3,
-    // JavaScript,
-    // TypeScript,
-}
+use super::*;
 
 pub enum JudgeType {
     Strict,
@@ -80,6 +63,19 @@ pub enum Comparision {
     PE,
 }
 
+pub struct CaseTask<'a> {
+    pub working_dir: &'a Path,
+    pub submission: &'a Submission,
+    pub src_filename: &'a str,
+    pub bin_filename: Option<&'a str>,
+    pub case_index: u32,
+    pub stdin_path: PathBuf,
+    pub stdout_path: PathBuf,
+    pub userout_path: PathBuf,
+    pub act_path: Option<PathBuf>,
+    pub spj_path: Option<PathBuf>,
+}
+
 impl Submission {
     pub fn update(&self, status: JudgeStatus) -> Update {
         Update {
@@ -124,6 +120,34 @@ impl Comparision {
             Comparision::AC => JudgeStatus::AC,
             Comparision::PE => JudgeStatus::PE,
             Comparision::WA => JudgeStatus::WA,
+        }
+    }
+}
+
+impl<'a> Target<'a> {
+    pub fn direct<'b>(task: &'b CaseTask) -> Target<'b> {
+        Target {
+            working_dir: task.working_dir,
+            bin: task.bin_filename.unwrap(),
+            args: vec![],
+            stdin: Some(&task.stdin_path),
+            stdout: Some(&task.userout_path),
+            stderr: None,
+        }
+    }
+
+    pub fn spj<'b>(task: &'b CaseTask) -> Target<'b> {
+        Target {
+            working_dir: task.working_dir,
+            bin: task.spj_path.as_ref().unwrap().to_str().unwrap(),
+            args: vec![
+                task.stdin_path.to_str().unwrap().to_owned(),
+                task.stdout_path.to_str().unwrap().to_owned(),
+                task.userout_path.to_str().unwrap().to_owned(),
+            ],
+            stdin: None,
+            stdout: None,
+            stderr: None,
         }
     }
 }
