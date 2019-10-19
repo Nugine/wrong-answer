@@ -2,6 +2,7 @@ use crate::types::*;
 use std::process::Command;
 use std::process::Stdio;
 
+#[derive(Debug,Clone)]
 pub struct BareMonitorSandBox;
 
 const MONITOR_PATH: &str = "wa-monitor";

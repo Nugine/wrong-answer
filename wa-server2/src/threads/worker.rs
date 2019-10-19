@@ -3,7 +3,7 @@ use crate::types::*;
 use crate::GLOBAL_CONFIG;
 use crate::utils::compare;
 
-
+#[derive(Clone)]
 pub struct Worker<S:SandBox> {
     pub submission_receiver: Receiver<Submission>,
     pub update_sender: Sender<Update>,

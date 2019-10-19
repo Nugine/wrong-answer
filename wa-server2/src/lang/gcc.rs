@@ -1,8 +1,8 @@
 use crate::types::*;
 
 pub struct Gcc {
-    std: &'static str,
-    is_cpp: bool,
+    pub is_cpp: bool,
+    pub std: &'static str,
 }
 
 impl LanguageBroker for Gcc {

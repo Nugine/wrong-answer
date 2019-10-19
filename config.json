@@ -1,3 +1,12 @@
 {
-    "redis_url": "redis://127.0.0.1:6379"
+    "redis_url": "redis://127.0.0.1:6379",
+    "output_hard_limit": 16,
+    "memory_hard_limit":256,
+
+    "data_dir": "/tmp/wa-data",
+    "workspace":"/tmp/wa-workspace",
+
+    "compile_limit": null,
+
+    "worker_num": 4
 }

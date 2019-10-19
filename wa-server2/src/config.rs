@@ -11,8 +11,11 @@ pub struct Config {
     pub memory_hard_limit: MegaByte,
 
     pub data_dir: PathBuf,
-
+    pub workspace: PathBuf,
+    
     pub compile_limit: Option<Limit>,
+
+    pub worker_num: u32
 }
 
 const CONFIG_ENV_KEY: &str = "WA_CONFIG_PATH";
