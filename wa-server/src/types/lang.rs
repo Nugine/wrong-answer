@@ -12,7 +12,7 @@ pub enum Language {
     Java,
     Python3,
     JavaScript,
-    // TypeScript,
+    TypeScript,
 }
 
 pub trait LanguageBroker {

@@ -3,14 +3,14 @@ mod java;
 mod nodejs;
 mod python3;
 mod rustc;
-
-use gcc::Gcc;
+mod tsnode;
 
 use crate::types::Language;
 use crate::types::LanguageBroker;
 
 impl Language {
     pub fn get_broker(self) -> Box<dyn LanguageBroker> {
+        use gcc::Gcc;
         use Language::*;
 
         match self {
@@ -42,6 +42,7 @@ impl Language {
             Java => Box::new(java::Java),
             Python3 => Box::new(python3::Python3),
             JavaScript => Box::new(nodejs::Nodejs),
+            TypeScript => Box::new(tsnode::TsNode),
         }
     }
 }
