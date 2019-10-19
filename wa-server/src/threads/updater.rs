@@ -1,22 +1,10 @@
+use super::*;
 use crate::redis::RedisBroker;
 use crate::types::*;
-use crossbeam_channel::Receiver;
 
 pub struct Updater {
     pub redis: RedisBroker,
     pub update_receiver: Receiver<Update>,
-}
-
-macro_rules! handle {
-    ($ret:expr,$fmt:expr) => {{
-        match $ret {
-            Err(e) => {
-                log::error!($fmt, e);
-                panic!(e)
-            }
-            Ok(r) => r,
-        }
-    }};
 }
 
 impl Updater {

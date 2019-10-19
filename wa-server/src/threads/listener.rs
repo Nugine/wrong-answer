@@ -1,6 +1,6 @@
+use super::*;
 use crate::redis::RedisBroker;
 use crate::types::*;
-use crossbeam_channel::Sender;
 
 pub struct Listener {
     pub redis: RedisBroker,
@@ -8,33 +8,30 @@ pub struct Listener {
     pub update_sender: Sender<Update>,
 }
 
-macro_rules! handle {
-    ($ret:expr,$fmt:expr) => {{
-        match $ret {
-            Err(e) => {
-                log::error!($fmt, e);
-                panic!(e)
-            }
-            Ok(r) => r,
-        }
-    }};
-}
-
 impl Listener {
     pub fn listen(self) -> impl Fn() + Send + Sync + 'static {
-        move || loop {
-            let submission = handle!(self.redis.get_submission(), "redis error: {}");
+        move || {
+            log::info!("reloading");
+            handle!(self.redis.reload(), "redis error: {}");
 
-            handle!(
-                self.update_sender
-                    .send(Update::from_status(submission.id, JudgeStatus::Queuing)),
-                "updater is disconnected: {}"
-            );
+            log::info!("start listening");
+            loop {
+                log::info!("waiting submission");
+                let submission = handle!(self.redis.get_submission(), "redis error: {}");
 
-            handle!(
-                self.submission_sender.send(submission),
-                "workers are disconnected: {}"
-            );
+                log::info!("submission id = {}", submission.id);
+
+                handle!(
+                    self.update_sender
+                        .send(submission.update(JudgeStatus::Queuing)),
+                    "updater is disconnected: {}"
+                );
+
+                handle!(
+                    self.submission_sender.send(submission),
+                    "workers are disconnected: {}"
+                );
+            }
         }
     }
 }

@@ -1,12 +1,17 @@
 {
-    "redis_url": "redis://127.0.0.1:6379",
     "output_hard_limit": 16,
-    "memory_hard_limit":256,
-
+    "memory_hard_limit": 256,
     "data_dir": "/tmp/wa-data",
-    "workspace":"/tmp/wa-workspace",
-
+    "workspace": "/tmp/wa-workspace",
     "compile_limit": null,
-
-    "worker_num": 4
+    "worker_num": 4,
+    "redis": {
+        "url": "redis://127.0.0.1:6379",
+        "key_prefix": "wa",
+        "submission_queue_key": "smq",
+        "temp_queue_key": "tq",
+        "submission_key_prefix": "sm",
+        "submission_status_key_prefix": "sms",
+        "judge_result_queue_key": "jrq"
+    }
 }

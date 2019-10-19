@@ -1,16 +1,32 @@
+use crate::types::*;
 use lazy_static::lazy_static;
-use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
-use crate::types::KiloByte;
+
+#[derive(Deserialize)]
+pub struct RedisConfig{
+    pub url: String,
+    pub key_prefix: String,
+    pub submission_queue_key: String,
+    pub temp_queue_key: String,
+    pub submission_key_prefix: String,
+    pub submission_status_key_prefix: String,
+    pub judge_result_queue_key: String,
+}
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub redis_url: String,
-    pub ce_filename: String,
-    pub output_limit:KiloByte,
-    pub memory_hard_limit: KiloByte,
-    pub data_dir: String,
+    pub redis: RedisConfig,
+
+    pub output_hard_limit: MegaByte,
+    pub memory_hard_limit: MegaByte,
+
+    pub data_dir: PathBuf,
+    pub workspace: PathBuf,
+    
+    pub compile_limit: Option<Limit>,
+
+    pub worker_num: u32
 }
 
 const CONFIG_ENV_KEY: &str = "WA_CONFIG_PATH";
@@ -21,6 +37,14 @@ fn load_config() -> Config {
     serde_json::from_reader(BufReader::new(config_file)).expect("invalid config")
 }
 
+fn validate_config(config: &Config) {
+    assert!(config.data_dir.is_dir());
+}
+
 lazy_static! {
-    pub static ref GLOBAL_CONFIG: Config = { load_config() };
+    pub static ref GLOBAL_CONFIG: Config = {
+        let config = load_config();
+        validate_config(&config);
+        config
+    };
 }

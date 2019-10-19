@@ -1,39 +1,18 @@
+use super::*;
 use crate::types::*;
 use crate::GLOBAL_CONFIG;
-use crossbeam_channel::{Receiver, Sender};
-use std::path::{Path, PathBuf};
+use crate::utils::compare;
 
-pub struct Worker<S: SandBox> {
+#[derive(Clone)]
+pub struct Worker<S:SandBox> {
     pub submission_receiver: Receiver<Submission>,
     pub update_sender: Sender<Update>,
-    pub working_dir: PathBuf,
-    pub sandbox: S,
-}
-
-macro_rules! handle {
-    ($ret:expr,$fmt:expr) => {{
-        match $ret {
-            Err(e) => {
-                log::error!($fmt, e);
-                panic!(e)
-            }
-            Ok(r) => r,
-        }
-    }};
-    (@custom $ret:expr,$fmt:expr,$($other:expr,)*) => {{
-        match $ret {
-            Err(e) => {
-                log::error!($fmt, $($other)*);
-                panic!(e)
-            }
-            Ok(r) => r,
-        }
-    }};
+    pub workspace: PathBuf,
+    pub sandbox: S
 }
 
 impl<S> Worker<S> 
-where
-    S:SandBox+Send+'static
+where S: SandBox+Send+'static
 {
     pub fn work(self) -> impl Fn() + Send + 'static {
         move || loop {
@@ -42,30 +21,170 @@ where
                 "submission sender is disconnected: {}"
             );
 
-            let id = submission.id;
+            let submission_id = submission.id;
+            let working_dir = self.workspace.join(submission_id.to_string());
 
-            let submission_dir = self.working_dir.join(id.to_string());
             handle!(@custom
-                std::fs::create_dir_all(&submission_dir),
+                std::fs::create_dir_all(&working_dir),
                 "can not create dir: {:?}",
-                &submission_dir,
+                &working_dir,
             );
 
-            if let Err(e) = self.handle_submission(submission, &submission_dir) {
+            if let Err(e) = self.handle_submission(submission, &working_dir) {
                 log::error!("system error: {}", e);
-                self.send_update(Update::from_status(id, JudgeStatus::SE))
+                self.send_update(Update {
+                    submission_id,
+                    status: JudgeStatus::SE,
+                    result: Some(JudgeResult::zero()),
+                });
+                // NOTE: SE
             }
 
             handle!(@custom
-                std::fs::remove_dir_all(&submission_dir),
+                std::fs::remove_dir_all(&working_dir),
                 "can not remove dir: {:?}",
-                &submission_dir,
+                &working_dir,
             );
         }
     }
-}
 
-impl<S:SandBox> Worker<S> {
+    fn handle_submission(&self, submission: Submission, working_dir: &Path) -> WaResult<()> {
+        let broker = submission.lang.get_broker();
+
+        // save source code
+        let (src_filename,bin_filename) = broker.filename();
+        let src_path = working_dir.join(src_filename);
+        std::fs::write(src_path,&submission.source_code)?;
+
+        // Queuing -> Compiling
+        self.try_send_update(submission.update(JudgeStatus::Compiling))?;
+
+        // compile
+        let ce_filename = "ce.txt";
+        let target = broker.compile(working_dir,ce_filename);
+        let limit = GLOBAL_CONFIG.compile_limit.as_ref();
+        let status = self.sandbox.run(target, limit)?;
+        match status.code{
+            Some(0)=>{},
+            Some(_)=>{
+                let msg = std::fs::read_to_string(working_dir.join(ce_filename))?;
+                let result = JudgeResult::from_ce(msg);
+                let update = submission.final_update(JudgeStatus::CE, result);
+                return self.try_send_update(update); // NOTE: CE
+            }
+            None=>{
+                let result = JudgeResult::zero();
+                let update = submission.final_update(JudgeStatus::CLE, result);
+                return self.try_send_update(update); // NOTE: CLE
+            }
+        };
+
+        // Compiling -> Judging
+        self.try_send_update(submission.update(JudgeStatus::Judging))?;
+
+        let data_dir: &Path = &GLOBAL_CONFIG.data_dir;
+        let mut case_task = CaseTask {
+            working_dir,
+            submission: &submission,
+            src_filename,
+            bin_filename,
+            case_index: 0,
+            stdin_path: data_dir.to_owned(),
+            stdout_path: data_dir.to_owned(),
+            userout_path: working_dir.join("userout.out"),
+            act_path: match submission.judge_type {
+                JudgeType::Interactive => Some(working_dir.join("act")),
+                _ => None,
+            },
+            spj_path: match submission.judge_type {
+                JudgeType::SpecialJudge => Some(working_dir.join("spj")),
+                _ => None,
+            },
+        };
+
+        let mut status = JudgeStatus::AC;
+        let mut result = JudgeResult::zero();
+        let cases =
+            (1..=submission.case_num).map(|i| (i, format!("{}.in", i), format!("{}.out", i)));
+        
+        for (i, input, output) in cases {
+            case_task.case_index = i + 1;
+            case_task.stdin_path.push(input);
+            case_task.stdout_path.push(output);
+
+            let res = self.run_case(broker.as_ref(), &case_task)
+                .map_err(|err|{
+                    log::error!(
+                        "system error: {}, submission_id = {}, problem_id = {}, case = {}",
+                        err,
+                        submission.id,
+                        submission.problem_id,
+                        case_task.case_index,
+                    );
+                    err
+                })?;
+
+            if res.status != JudgeStatus::AC {
+                status = res.status;
+            }
+
+            result.time += res.time;
+            result.memory += res.memory;
+            result.cases.push(res);
+
+            case_task.stdin_path.pop();
+            case_task.stdout_path.pop();
+        }
+
+        self.try_send_update(submission.final_update(status, result))
+    }
+
+    fn run_case(&self,broker: &dyn LanguageBroker, task: &CaseTask)->WaResult<JudgeCaseResult>{
+        let target = broker.run_case(task);
+        let limit = Limit::from_submission(&task.submission);
+        let target_status = self.sandbox.run(target,Some(&limit))?;
+
+        let (time,memory,status)=parse_status(&target_status,&limit);
+
+        if let Some(status)= status{
+            return Ok(JudgeCaseResult{
+                time,memory,status
+            })
+        }
+
+        let status = if task.spj_path.is_some(){
+            let target = Target::spj(task);
+            let target_status = self.sandbox.run(target,Some(&limit))?;
+            match target_status.code{
+                Some(0) => JudgeStatus::AC,
+                Some(1) => JudgeStatus::WA,
+                Some(2) => JudgeStatus::PE,
+                _ =>{
+                    log::error!("special judge error: code = {:?}, signal = {:?}, submission_id = {}, case = {}",
+                        target_status.code,
+                        target_status.signal,
+                        task.submission.id,
+                        task.case_index,
+                    );
+                    JudgeStatus::WA
+                }
+            }
+        }else{
+            let ignore_trailing_space = match task.submission.judge_type {
+                JudgeType::Strict => false,
+                JudgeType::IgnoreTrialingSpace => true,
+                _ => unreachable!(),
+            };
+            let cmp = compare(ignore_trailing_space, &task.stdout_path, &task.userout_path)?;
+            cmp.to_status()
+        };
+
+        Ok(JudgeCaseResult{
+                time,memory,status
+            })
+
+    }
+
     fn send_update(&self, update: Update) {
         handle!(
             self.update_sender.send(update),
@@ -74,132 +193,37 @@ impl<S:SandBox> Worker<S> {
     }
 
     fn try_send_update(&self, update: Update) -> WaResult<()> {
-        unimplemented!()
-    }
-
-    // TODO:
-    fn handle_submission(&self, submission: Submission, dir: &Path) -> WaResult<()> {
-        let lang = submission.language;
-
-        // save source code
-        let source_path = dir.join(lang.get_source_name());
-        std::fs::write(&source_path, &submission.source_code)?;
-
-        // Queuing -> Compiling
-        self.try_send_update(Update::from_status(submission.id, JudgeStatus::Compiling))?;
-
-        // compile
-        let target_path = {
-            if let Some(compiler) = lang.get_compiler() {
-                let binary_path = dir.join(
-                    submission
-                        .language
-                        .get_binary_name()
-                        .expect("lang config error"),
-                );
-                let ce_path = dir.join(&GLOBAL_CONFIG.ce_filename);
-
-                let task: CompileTask = CompileTask {
-                    working_dir: dir,
-                    source_path: source_path.to_str().unwrap(),
-                    binary_path: binary_path.to_str().unwrap(),
-                    ce_message_path: ce_path.to_str().unwrap(),
-                };
-                let limit = lang.get_limit();
-
-                let status = compiler.compile(task, limit)?;
-                let status = match status.code {
-                    Some(0) => None,
-                    Some(_) => Some(JudgeStatus::CE),
-                    None => Some(JudgeStatus::CLE),
-                };
-                if let Some(status) = status {
-                    let ce_message = std::fs::read_to_string(&ce_path)?;
-                    let update = Update {
-                        submission_id: submission.id,
-                        status,
-                        result: Some(JudgeResult::from_ce(ce_message)),
-                    };
-                    self.try_send_update(update)?;
-                    return Ok(()); // final: CE | CLE
-                }
-
-                binary_path
-            } else {
-                source_path
-            }
-        };
-
-        // Compiling -> Judging
-        self.try_send_update(Update::from_status(submission.id, JudgeStatus::Judging))?;
-
-        // run
-        let mut case_results = <Vec<JudgeCaseResult>>::with_capacity(submission.problem.case_num as usize);
-        let data_dir = Path::new(&GLOBAL_CONFIG.data_dir).join(submission.problem.id.to_string());
-        let mut stdin  =data_dir.clone();
-        let mut stdout  =data_dir.clone();
-        for case in cases(submission.problem.case_num) {
-            let (bin, args) = lang.get_target(&target_path);
-            stdin.push(case.0);
-            stdout.push(case.1);
-            let target = Target {
-                working_dir: dir,
-                bin,
-                args: &args,
-                stdin: Some(stdin.to_str().unwrap()),
-                stdout: Some(stdout.to_str().unwrap()),
-                stderr: None,
-            };
-            let limit = Limit{
-                time: submission.problem.time_limit,
-                memory: submission.problem.memory_limit.saturating_mul(2).min(GLOBAL_CONFIG.memory_hard_limit),
-                output: GLOBAL_CONFIG.output_limit,
-                security_cfg_path: lang.get_security_cfg()
-            };
-            let target_status = self.sandbox.run(target,Some(limit))?;
-            stdin.pop();
-            stdout.pop();
-
-            let cpu_time : MilliSecond = target_status.user_time+target_status.sys_time;
-            let memory = target_status.memory;
-
-            let mut case_result = JudgeCaseResult{
-                time: cpu_time,
-                memory,
-                status: JudgeStatus::Judging,
-            };
-
-            if cpu_time > submission.problem.time_limit.saturating_mul(1000){
-                case_result.status = JudgeStatus::TLE;
-            }else if memory> submission.problem.memory_limit.saturating_mul(1024){
-                case_result.status = JudgeStatus::MLE;
-            }else if target_status.signal == Some(25){ // ENOTTY
-                case_result.status = JudgeStatus::OLE;
-            }else if is_runtime_error(&target_status){
-                case_result.status = JudgeStatus::RE;
-            }
-
-            use crate::comparer::SimpleComparer;
-
-            let comparer = SimpleComparer{ignore_trailing_space: true};
-
-
-            // comparer.compare()
-            unimplemented!();
-            
-        }
-
-        unimplemented!()
+        self.update_sender
+            .send(update)
+            .map_err(|_| WaError::Channel("updater is disconnected"))
     }
 }
 
-fn cases(case_num: u32) -> impl Iterator<Item = (String, String)> {
-    (1..=case_num).map(|i| (format!("{}.in", i), format!("{}.out", i)))
-}
+pub fn parse_status(
+    status: &TargetStatus,
+    limit: &Limit,
+) -> (MilliSecond, KiloByte, Option<JudgeStatus>) {
+    let cpu_time = status.user_time + status.sys_time;
+    let memory = status.memory;
 
-fn is_runtime_error(status: &TargetStatus)->bool{
-    match status.code{
-        Some(0)=>false,
-        _ => true,
+    let gen = |status| (cpu_time, memory, Some(status));
+
+    if cpu_time > limit.time {
+        return gen(JudgeStatus::TLE);
     }
+
+    if memory > limit.memory {
+        return gen(JudgeStatus::MLE);
+    }
+
+    // NOTE: ENOTTY 25
+    if status.signal == Some(25) {
+        return gen(JudgeStatus::OLE);
+    }
+
+    if status.code != Some(0) {
+        return gen(JudgeStatus::RE);
+    }
+
+    (cpu_time, memory, None)
 }

@@ -1,12 +1,23 @@
-mod component;
+mod unit {
+    pub type KiloByte = u64;
+    pub type MegaByte = u64;
+    pub type Second = u64;
+    pub type MilliSecond = u64;
+}
 mod judge;
-mod unit;
+mod lang;
+mod sandbox;
 
-pub use self::component::*;
-pub use self::judge::*;
-pub use self::unit::*;
+pub use judge::*;
+pub use lang::*;
+pub use sandbox::*;
+pub use unit::*;
+
+pub use num_traits::FromPrimitive;
+pub use serde::{Deserialize, Serialize};
+pub use std::collections::HashMap;
+pub use std::path::{Path, PathBuf};
 pub use wa_monitor::types::{MonitorErrorKind, TargetStatus};
-pub use std::path::{PathBuf,Path};
 
 use std::fmt::{self, Display};
 use thiserror::Error;
@@ -18,14 +29,18 @@ pub enum WaError {
         #[source]
         std::io::Error,
     ),
-    Compiler(String),
-    Monitor(#[from] MonitorErrorKind),
     Redis(
         #[from]
         #[source]
         redis::RedisError,
     ),
-    Channel(&'static str)
+    R2d2(
+        #[from]
+        #[source]
+        r2d2::Error
+    ),
+    Channel(&'static str),
+    Monitor(#[from] MonitorErrorKind),
 }
 
 pub type WaResult<T> = Result<T, WaError>;

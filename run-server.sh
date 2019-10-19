@@ -1,0 +1,1 @@
+WA_CONFIG_PATH=config.json RUST_LOG=debug cargo run --bin wa-server

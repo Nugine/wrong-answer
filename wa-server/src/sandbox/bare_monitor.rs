@@ -1,21 +1,36 @@
 use crate::types::*;
-use num_traits::FromPrimitive;
 use std::process::Command;
 use std::process::Stdio;
 
+#[derive(Debug,Clone)]
 pub struct BareMonitorSandBox;
 
 const MONITOR_PATH: &str = "wa-monitor";
 const NULL_DEVICE: &str = "/dev/null";
 
 impl SandBox for BareMonitorSandBox {
-    fn run(&self, target: Target, _limit: Option<Limit>) -> WaResult<TargetStatus> {
+    fn run(&self, target: Target, _limit: Option<&Limit>) -> WaResult<TargetStatus> {
         let mut command = Command::new(MONITOR_PATH);
         command.current_dir(target.working_dir);
 
-        command.arg("-i").arg(target.stdin.unwrap_or(NULL_DEVICE));
-        command.arg("-o").arg(target.stdout.unwrap_or(NULL_DEVICE));
-        command.arg("-e").arg(target.stderr.unwrap_or(NULL_DEVICE));
+        command.arg("-i").arg(
+            target
+                .stdin
+                .map(|p| p.to_str().unwrap())
+                .unwrap_or(NULL_DEVICE),
+        );
+        command.arg("-o").arg(
+            target
+                .stdout
+                .map(|p| p.to_str().unwrap())
+                .unwrap_or(NULL_DEVICE),
+        );
+        command.arg("-e").arg(
+            target
+                .stderr
+                .map(|p| p.to_str().unwrap())
+                .unwrap_or(NULL_DEVICE),
+        );
 
         command
             .arg("--")
@@ -40,8 +55,11 @@ impl SandBox for BareMonitorSandBox {
             }
         };
 
-        let status: TargetStatus = serde_json::from_slice(&output.stdout)
-            .map_err(|_| -> WaError { MonitorErrorKind::Unknown.into() })?;
+        let status: TargetStatus =
+            serde_json::from_slice(&output.stdout).map_err(|_| -> WaError {
+                log::error!("json error: {:?}", std::str::from_utf8(&output.stdout));
+                MonitorErrorKind::Unknown.into()
+            })?;
         Ok(status)
     }
 }
@@ -54,7 +72,7 @@ fn test_bare_monitor() {
         Target {
             working_dir: Path::new("."),
             bin: "ls",
-            args: &vec![],
+            args: vec![],
             stdin: None,
             stdout: None,
             stderr: None,
@@ -68,7 +86,7 @@ fn test_bare_monitor() {
         Target {
             working_dir: Path::new("."),
             bin: "qwertyuiop",
-            args: &vec![],
+            args: vec![],
             stdin: None,
             stdout: None,
             stderr: None,
