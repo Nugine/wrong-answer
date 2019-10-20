@@ -1,15 +1,17 @@
 use std::fs::File;
-use std::process::{Child, Command, Stdio};
+use std::os::unix::process::CommandExt;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use structopt::StructOpt;
 use wa_monitor::types::MonitorErrorKind;
 
 #[derive(Debug, Clone, StructOpt)]
 struct PipeOpt {
     #[structopt(long, value_name = "path")]
-    uapipe: String,
+    uapipe: PathBuf,
 
     #[structopt(long, value_name = "path")]
-    aupipe: String,
+    aupipe: PathBuf,
 }
 
 #[derive(Debug, StructOpt)]
@@ -24,7 +26,7 @@ struct ActOpt {
     actpath: String,
 }
 #[derive(Debug, StructOpt)]
-struct MonitorOpt {
+struct BinOpt {
     bin: String,
 
     args: Vec<String>,
@@ -33,7 +35,7 @@ struct MonitorOpt {
 #[derive(Debug, StructOpt)]
 struct Opt {
     #[structopt(flatten)]
-    monitor_opt: MonitorOpt,
+    bin_opt: BinOpt,
 
     #[structopt(flatten)]
     act_opt: ActOpt,
@@ -45,94 +47,66 @@ struct Opt {
 fn main() {
     env_logger::init();
 
-    let opt = Opt::from_args();
+    let Opt {
+        act_opt,
+        bin_opt,
+        pipe_opt,
+    } = Opt::from_args();
+    let pipe_opt1 = pipe_opt.clone();
+    let act_handle = std::thread::spawn(move || -> Result<(File, File), MonitorErrorKind> {
+        let ua_rx = fifo_open(&pipe_opt1.uapipe)?;
+        let au_tx = fifo_create(&pipe_opt1.aupipe)?;
+        Ok((ua_rx, au_tx))
+    });
 
-    let act_opt = opt.act_opt;
-    let monitor_opt = opt.monitor_opt;
-    let pipe_opt1 = opt.pipe_opt.clone();
-    let pipe_opt2 = opt.pipe_opt;
+    let bin_handle = std::thread::spawn(move || -> Result<(File, File), MonitorErrorKind> {
+        let ua_tx = fifo_create(&pipe_opt.uapipe)?;
+        let au_rx = fifo_open(&pipe_opt.aupipe)?;
+        Ok((au_rx, ua_tx))
+    });
 
-    let act_handle = std::thread::spawn(move || spawn_act(act_opt, pipe_opt1));
-
-    let monitor_handle = std::thread::spawn(move || spawn_monitor(monitor_opt, pipe_opt2));
-
-    let mut act = match act_handle.join() {
-        Ok(Ok(child)) => child,
-        Ok(Err(e)) => {
-            log::error!("spawn act error: {}", e);
-            std::process::exit(e as i32)
-        }
-        Err(_) => {
-            log::error!("can not spawn act thread");
-            std::process::exit(MonitorErrorKind::ThreadError as i32)
-        }
+    let (ua_rx, au_tx) = match act_handle.join().unwrap() {
+        Ok(f) => f,
+        Err(e) => std::process::exit(e as i32),
     };
 
-    let mut monitor = match monitor_handle.join() {
-        Ok(Ok(child)) => child,
-        Ok(Err(e)) => {
-            log::error!("spawn monitor error: {}", e);
-            std::process::exit(e as i32)
-        }
-        Err(_) => {
-            log::error!("can not spawn monitor thread");
-            std::process::exit(MonitorErrorKind::ThreadError as i32)
-        }
+    let (au_rx, ua_tx) = match bin_handle.join().unwrap() {
+        Ok(f) => f,
+        Err(e) => std::process::exit(e as i32),
     };
 
-    let _ = monitor.wait();
-    let _ = act.wait();
-}
-
-fn spawn_act(opt: ActOpt, pipe: PipeOpt) -> Result<Child, MonitorErrorKind> {
-    // monitor opens aupipe firstly
-    // open aupipe firstly here to avoid deadlock
-
-    let stdout = match File::create(&pipe.aupipe) {
-        Ok(file) => file,
-        Err(e) => {
-            log::error!("fifo error: {}", e);
-            return Err(MonitorErrorKind::FifoError);
-        }
-    };
-
-    let stdin = match File::open(&pipe.uapipe) {
-        Ok(file) => file,
-        Err(e) => {
-            log::error!("fifo error: {}", e);
-            return Err(MonitorErrorKind::FifoError);
-        }
-    };
-
-    Command::new(opt.actpath)
-        .arg(opt.actin)
-        .arg(opt.actout)
-        .stdin(stdin)
-        .stdout(stdout)
+    if let Err(e) = Command::new(act_opt.actpath)
+        .arg(act_opt.actin)
+        .arg(act_opt.actout)
+        .stdin(ua_rx)
+        .stdout(au_tx)
         .stderr(Stdio::null())
         .spawn()
-        .map_err(|e| {
-            log::error!("can not spawn act: {}", e);
-            MonitorErrorKind::ForkError
-        })
+    {
+        log::error!("can not spawn act: {}", e);
+        std::process::exit(MonitorErrorKind::ForkError as i32)
+    }
+
+    let e = Command::new(bin_opt.bin)
+        .args(bin_opt.args)
+        .stdin(au_rx)
+        .stdout(ua_tx)
+        .stderr(Stdio::null())
+        .exec();
+    log::error!("can not exec bin: {}", e);
+    std::process::exit(MonitorErrorKind::ForkError as i32)
 }
 
-fn spawn_monitor(opt: MonitorOpt, pipe: PipeOpt) -> Result<Child, MonitorErrorKind> {
-    Command::new("wa-monitor")
-        .arg("-i")
-        .arg(pipe.aupipe)
-        .arg("-o")
-        .arg(pipe.uapipe)
-        .arg("-e")
-        .arg("/dev/null")
-        .arg(opt.bin)
-        .args(opt.args)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .spawn()
-        .map_err(|e| {
-            log::error!("can not spawn monitor: {}", e);
-            MonitorErrorKind::ForkError
-        })
+fn fifo_open(path: &Path) -> Result<File, MonitorErrorKind> {
+    File::open(path).map_err(|e| {
+        log::error!("fifo error: {}", e);
+        MonitorErrorKind::FifoError
+    })
+}
+
+fn fifo_create(path: &Path) -> Result<File, MonitorErrorKind> {
+    File::create(path).map_err(|e| {
+        log::error!("fifo error: {}", e);
+        MonitorErrorKind::FifoError
+    })
 }
