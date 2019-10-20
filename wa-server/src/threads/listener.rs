@@ -50,16 +50,21 @@ impl Listener {
         let mut data_path: PathBuf = GLOBAL_CONFIG.data_dir.join(problem_id.to_string());
         const TIMESTAMP_FILENAME: &str = "timestamp";
 
+        let mut local = None;
         let needs_sync = if data_path.exists() {
             data_path.push(TIMESTAMP_FILENAME);
 
-            if data_path.exists() {
+            let needs = if data_path.exists() {
                 let timestamp = std::fs::read_to_string(&data_path)?;
                 let local_timestamp: u64 = timestamp.trim().parse().expect("invalid timestamp");
+                local = Some(local_timestamp);
                 local_timestamp < remote_timestamp
             } else {
                 true
-            }
+            };
+
+            data_path.pop();
+            needs
         } else {
             std::fs::create_dir_all(&data_path)?;
             true
@@ -69,13 +74,19 @@ impl Listener {
             return Ok(());
         }
 
-        log::info!("sync data: problem id = {}", problem_id);
+        log::info!(
+            "sync data: problem id = {}, local = {:?}, remote = {}",
+            problem_id,
+            local,
+            remote_timestamp
+        );
 
         let data = self.redis.get_problem_data(problem_id)?;
 
         let mut file_path = data_path;
         for (filename, text) in data {
             file_path.push(filename);
+            log::info!("write file: {:?}", file_path);
             std::fs::write(&file_path, text)?;
             file_path.pop();
         }

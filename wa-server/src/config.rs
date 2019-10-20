@@ -40,7 +40,12 @@ fn load_config() -> Config {
 }
 
 fn validate_config(config: &Config) {
-    assert!(config.data_dir.is_dir());
+    if !config.data_dir.exists(){
+        std::fs::create_dir_all(&config.data_dir).expect("can not create data dir");
+    }
+    if !config.workspace.exists(){
+        std::fs::create_dir_all(&config.workspace).expect("can not create workspace");
+    }
 }
 
 lazy_static! {

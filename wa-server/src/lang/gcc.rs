@@ -37,7 +37,6 @@ impl LanguageBroker for Gcc {
     }
 
     fn run_case<'a>(&self, task: &'a CaseTask) -> Target<'a> {
-        assert!(task.act_path.is_none()); // FIXME:
         Target::direct(task)
     }
 }

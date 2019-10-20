@@ -53,6 +53,7 @@ fn main() {
         pipe_opt,
     } = Opt::from_args();
     let pipe_opt1 = pipe_opt.clone();
+
     let act_handle = std::thread::spawn(move || -> Result<(File, File), MonitorErrorKind> {
         let ua_rx = fifo_open(&pipe_opt1.uapipe)?;
         let au_tx = fifo_create(&pipe_opt1.aupipe)?;
@@ -110,3 +111,4 @@ fn fifo_create(path: &Path) -> Result<File, MonitorErrorKind> {
         MonitorErrorKind::FifoError
     })
 }
+

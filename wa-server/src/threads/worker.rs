@@ -1,7 +1,15 @@
 use super::*;
 use crate::types::*;
-use crate::utils::compare;
+use crate::utils::{compare, mkfifo};
 use crate::GLOBAL_CONFIG;
+
+const UA_PIPE: &str = "ua.pipe";
+const AU_PIPE: &str = "au.pipe";
+const ACT: &str = "act";
+const SPJ: &str = "spj";
+const CE: &str = "ce.txt";
+const ERR_LOG: &str = "stderr.log";
+const USEROUT: &str = "userout.out";
 
 #[derive(Clone)]
 pub struct Worker<S: SandBox> {
@@ -65,7 +73,7 @@ where
         self.try_send_update(submission.update(JudgeStatus::Compiling))?;
 
         // compile
-        let ce_filename = "ce.txt";
+        let ce_filename = CE;
         let target = broker.compile(working_dir, ce_filename);
         if let Some(target) = target {
             let limit = GLOBAL_CONFIG.compile_limit.as_ref();
@@ -91,27 +99,35 @@ where
 
         let data_guard = self.data_lock.read().expect("data lock error");
 
-        let data_dir: &Path = &GLOBAL_CONFIG.data_dir;
+        let data_dir = GLOBAL_CONFIG
+            .data_dir
+            .join(submission.problem_id.to_string());
         let mut case_task = CaseTask {
             working_dir,
             submission: &submission,
             src_filename,
             bin_filename,
             case_index: 0,
-            stdin_path: data_dir.join(submission.problem_id.to_string()),
-            stdout_path: data_dir.join(submission.problem_id.to_string()),
-            userout_path: working_dir.join("userout.out"),
+            stdin_path: data_dir.clone(),
+            stdout_path: data_dir.clone(),
+            userout_path: working_dir.join(USEROUT),
             act_path: if submission.judge_type == JudgeType::Interactive {
-                Some(working_dir.join("act"))
+                Some(data_dir.join(ACT))
             } else {
                 None
             },
             spj_path: if submission.judge_type == JudgeType::SpecialJudge {
-                Some(working_dir.join("spj"))
+                Some(data_dir.join(SPJ))
             } else {
                 None
             },
+            err_log_path: Some(working_dir.join(ERR_LOG)),
         };
+
+        if submission.judge_type == JudgeType::Interactive {
+            mkfifo(&working_dir.join(AU_PIPE))?;
+            mkfifo(&working_dir.join(UA_PIPE))?;
+        }
 
         let mut status = JudgeStatus::AC;
         let mut result = JudgeResult::zero();
@@ -151,7 +167,18 @@ where
     }
 
     fn run_case(&self, broker: &dyn LanguageBroker, task: &CaseTask) -> WaResult<JudgeCaseResult> {
-        let target = broker.run_case(task);
+        let get_target = || -> WaResult<Target> {
+            let target = broker.run_case(task);
+            let act_path = match task.act_path {
+                None => return Ok(target),
+                Some(ref p) => p,
+            };
+            let err_log_path = task.err_log_path.as_ref().map(|p| &**p);
+            Ok(target.wrap_interact(act_path, AU_PIPE, UA_PIPE, err_log_path))
+        };
+
+        let target = get_target()?;
+
         let limit = Limit::from_submission(&task.submission);
         let target_status = self.sandbox.run(target, Some(&limit))?;
 
@@ -186,6 +213,7 @@ where
             let ignore_trailing_space = match task.submission.judge_type {
                 JudgeType::Strict => false,
                 JudgeType::IgnoreTrialingSpace => true,
+                JudgeType::Interactive => false,
                 _ => unreachable!(),
             };
             let cmp = compare(ignore_trailing_space, &task.stdout_path, &task.userout_path)?;

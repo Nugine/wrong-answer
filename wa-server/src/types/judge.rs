@@ -79,6 +79,7 @@ pub struct CaseTask<'a> {
     pub userout_path: PathBuf,
     pub act_path: Option<PathBuf>,
     pub spj_path: Option<PathBuf>,
+    pub err_log_path: Option<PathBuf>,
 }
 
 impl Submission {
@@ -138,14 +139,14 @@ impl Update {
 #[test]
 fn print_mock_submission() {
     let sm = Submission {
-        id: 50,
-        problem_id: 1001,
-        judge_type: JudgeType::Strict,
+        id: 51,
+        problem_id: 1002,
+        judge_type: JudgeType::Interactive,
         time_limit: 1,
         memory_limit: 32,
         case_num: 1,
-        source_code: include_str!("../../../assets/hello-tsnode.ts").into(),
-        lang: Language::TypeScript,
+        source_code: include_str!("../../../assets/guess.cpp").into(),
+        lang: Language::Cpp14,
     };
     let value = serde_json::to_string(&sm).unwrap();
     println!("{:?}", value);
