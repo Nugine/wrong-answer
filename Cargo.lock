@@ -883,6 +883,10 @@ version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "wa-interact"
+version = "0.1.0"
+
+[[package]]
 name = "wa-monitor"
 version = "0.1.0"
 dependencies = [
