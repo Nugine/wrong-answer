@@ -77,7 +77,6 @@ impl Target {
             std::process::exit(0);
             // child process fail
         }
-        std::mem::forget(argv);
 
         {
             let _ = libc::close(tx_fd);
