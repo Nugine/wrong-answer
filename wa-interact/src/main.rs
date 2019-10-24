@@ -111,4 +111,3 @@ fn fifo_create(path: &Path) -> Result<File, MonitorErrorKind> {
         MonitorErrorKind::FifoError
     })
 }
-

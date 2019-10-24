@@ -1,10 +1,11 @@
 use super::*;
+use crate::into_vec;
 use crate::GLOBAL_CONFIG;
 
 pub struct Target<'a> {
     pub working_dir: &'a Path,
-    pub bin: String,
-    pub args: Vec<String>,
+    pub bin: CowOsStr<'a>,
+    pub args: Vec<CowOsStr<'a>>,
     pub stdin: Option<&'a Path>,
     pub stdout: Option<&'a Path>,
     pub stderr: Option<&'a Path>,
@@ -43,54 +44,66 @@ impl<'a> Target<'a> {
     pub fn direct<'b>(task: &'b CaseTask) -> Target<'b> {
         Target {
             working_dir: task.working_dir,
-            bin: task
-                .working_dir
-                .join(task.bin_filename.unwrap())
-                .to_str()
-                .unwrap()
-                .to_owned(),
+            bin: task.working_dir.join(task.bin_filename.unwrap()).into(),
             args: vec![],
             stdin: Some(&task.stdin_path),
             stdout: Some(&task.userout_path),
-            stderr: task.err_log_path.as_ref().map(|p|&**p)
+            stderr: task.err_log_path.as_ref().map(|p| &**p),
+        }
+    }
+
+    pub fn vm<'b>(task: &'b CaseTask, vm: CowOsStr<'b>, arg1: CowOsStr<'b>) -> Target<'b> {
+        Target {
+            working_dir: task.working_dir,
+            bin: vm,
+            args: vec![arg1],
+            stdin: Some(&task.stdin_path),
+            stdout: Some(&task.userout_path),
+            stderr: None,
         }
     }
 
     pub fn spj<'b>(_task: &'b CaseTask) -> Target<'b> {
         unimplemented!() // FIXME:
-        // Target {
-        //     working_dir: task.working_dir,
-        //     bin: task.spj_path.as_ref().unwrap().to_str().unwrap().to_owned(),
-        //     args: vec![
-        //         to_string(&task.stdin_path),
-        //         to_string(&task.stdout_path),
-        //         to_string(&task.userout_path),
-        //     ],
-        //     stdin: None,
-        //     stdout: None,
-        //     stderr: None,
-        // }
+                         // Target {
+                         //     working_dir: task.working_dir,
+                         //     bin: task.spj_path.as_ref().unwrap().to_str().unwrap().to_owned(),
+                         //     args: vec![
+                         //         to_string(&task.stdin_path),
+                         //         to_string(&task.stdout_path),
+                         //         to_string(&task.userout_path),
+                         //     ],
+                         //     stdin: None,
+                         //     stdout: None,
+                         //     stderr: None,
+                         // }
     }
 
-    pub fn wrap_interact(self, act_path:&'a Path,aupipe: &'a str, uapipe: &'a str, err_log_path: Option<&'a Path>)->Self{
+    pub fn wrap_interact(
+        self,
+        act_path: &'a Path,
+        aupipe: &'a str,
+        uapipe: &'a str,
+        err_log_path: Option<&'a Path>,
+    ) -> Self {
         let bin = "wa-interact".into();
-        let mut args = vec![
-            "--actin".into(),
-            self.stdin.map(to_string).unwrap(),
-            "--actout".into(),
-            self.stdout.map(to_string).unwrap(),
-            "--actpath".into(),
-            to_string(act_path),
-            "--aupipe".into(),
-            aupipe.into(),
-            "--uapipe".into(),
-            uapipe.into(),
-            "--".into(),
+        let mut args = into_vec![
+            "--actin",
+            self.stdin.unwrap(),
+            "--actout",
+            self.stdout.unwrap(),
+            "--actpath",
+            act_path,
+            "--aupipe",
+            aupipe,
+            "--uapipe",
+            uapipe,
+            "--",
             self.bin,
         ];
         args.extend(self.args);
 
-        Target{
+        Target {
             working_dir: self.working_dir,
             bin,
             args,
@@ -99,8 +112,4 @@ impl<'a> Target<'a> {
             stderr: err_log_path,
         }
     }
-}
-
-fn to_string(path: &Path)->String{
-    path.to_str().unwrap().to_owned()
 }

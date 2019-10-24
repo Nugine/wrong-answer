@@ -14,13 +14,6 @@ impl LanguageBroker for Python3 {
     fn run_case<'a>(&self, task: &'a CaseTask) -> Target<'a> {
         assert!(task.act_path.is_none()); // FIXME:
         let (src, _) = self.filename();
-        Target {
-            working_dir: task.working_dir,
-            bin: "python3".into(),
-            args: vec![src.into()],
-            stdin: Some(&task.stdin_path),
-            stdout: Some(&task.userout_path),
-            stderr: None,
-        }
+        Target::vm(task, "python3".into(), src.into())
     }
 }

@@ -40,10 +40,10 @@ fn load_config() -> Config {
 }
 
 fn validate_config(config: &Config) {
-    if !config.data_dir.exists(){
+    if !config.data_dir.exists() {
         std::fs::create_dir_all(&config.data_dir).expect("can not create data dir");
     }
-    if !config.workspace.exists(){
+    if !config.workspace.exists() {
         std::fs::create_dir_all(&config.workspace).expect("can not create workspace");
     }
 }

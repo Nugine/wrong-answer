@@ -1,3 +1,4 @@
+use crate::into_vec;
 use crate::types::*;
 
 pub struct Rustc;
@@ -12,14 +13,7 @@ impl LanguageBroker for Rustc {
         let rustc = "rustc".into();
         let (src, bin) = self.filename();
 
-        let args = vec![
-            src.into(),
-            "-o".into(),
-            bin.unwrap().into(),
-            "-O".into(),
-            "--edition".into(),
-            "2018".into(),
-        ];
+        let args = into_vec![src, "-o", bin.unwrap(), "-O", "--edition", "2018",];
 
         Some(Target {
             working_dir,

@@ -1,3 +1,4 @@
+use crate::into_vec;
 use crate::types::*;
 
 pub struct Gcc {
@@ -17,14 +18,7 @@ impl LanguageBroker for Gcc {
         let (src, bin) = self.filename();
         let std = format!("-std={}", self.std);
 
-        let args = vec![
-            src.into(),
-            "-o".into(),
-            bin.unwrap().into(),
-            "-O2".into(),
-            "-static".into(),
-            std,
-        ];
+        let args = into_vec![src, "-o", bin.unwrap(), "-O2", "-static", std,];
 
         Some(Target {
             working_dir,

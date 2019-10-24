@@ -30,6 +30,13 @@ macro_rules! handle {
     }};
 }
 
+#[macro_export]
+macro_rules! into_vec {
+    [$($val:expr,)+] => {
+        vec![$($val.into(),)+]
+    }
+}
+
 use crate::redis::RedisBroker;
 use crate::sandbox::BareMonitorSandBox;
 use crate::types::{Arc, RwLock};

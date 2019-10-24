@@ -1,6 +1,6 @@
 use std::ffi::CString;
-use wa_monitor::types::MonitorErrorKind;
 use std::path::Path;
+use wa_monitor::types::MonitorErrorKind;
 
 pub fn mkfifo(path: &Path) -> Result<(), MonitorErrorKind> {
     let path = path.to_str().unwrap();
