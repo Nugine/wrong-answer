@@ -40,6 +40,8 @@ where
                 &working_dir,
             );
 
+            let t0 = std::time::Instant::now();
+
             if let Err(e) = self.handle_submission(submission, &working_dir) {
                 log::error!("system error: {}", e);
                 self.send_update(Update {
@@ -49,6 +51,12 @@ where
                 });
                 // NOTE: SE
             }
+
+            log::info!(
+                "submission id = {}, exec time = {:?}",
+                submission_id,
+                t0.elapsed()
+            );
 
             // don't remove working_dir in debug mode
             if !cfg!(debug_assertions) {
@@ -125,8 +133,14 @@ where
         };
 
         if submission.judge_type == JudgeType::Interactive {
-            mkfifo(&working_dir.join(AU_PIPE))?;
-            mkfifo(&working_dir.join(UA_PIPE))?;
+            let au_pipe = working_dir.join(AU_PIPE);
+            if !au_pipe.exists() {
+                mkfifo(&au_pipe)?;
+            }
+            let ua_pipe = working_dir.join(UA_PIPE);
+            if !ua_pipe.exists() {
+                mkfifo(&ua_pipe)?;
+            }
         }
 
         let mut status = JudgeStatus::AC;
