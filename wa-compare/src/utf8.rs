@@ -1,13 +1,10 @@
-use crate::types::*;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use super::*;
 
-#[deprecated]
-pub fn compare(
-    ignore_trailing_space: bool,
+pub fn compare_utf8(
+    allow_pe: bool,
     stdout_path: &Path,
     userout_path: &Path,
-) -> WaResult<Comparision> {
+) -> IoResult<Comparision> {
     let mut std_reader = BufReader::new(File::open(stdout_path)?);
     let mut user_reader = BufReader::new(File::open(userout_path)?);
 
@@ -30,20 +27,21 @@ pub fn compare(
         let std_line = trim_endline(&std_line);
         let user_line = trim_endline(&user_line);
 
-        let std_line_trimed = std_line.trim_end();
-        let user_line_trimed = user_line.trim_end();
-        let std_line_tail = &std_line[std_line_trimed.len()..];
-        let user_line_tail = &user_line[user_line_trimed.len()..];
-
-        if std_line_trimed != user_line_trimed {
+        let std_parts = std_line.split_whitespace();
+        let mut user_parts = user_line.split_whitespace();
+        for std_part in std_parts {
+            let user_part = match user_parts.next() {
+                None => return Ok(Comparision::WA),
+                Some(p) => p,
+            };
+            if std_part != user_part {
+                return Ok(Comparision::WA);
+            }
+        }
+        if user_parts.next().is_some() {
             return Ok(Comparision::WA);
         }
-
-        if ignore_trailing_space {
-            continue;
-        }
-
-        if std_line_tail != user_line_tail {
+        if !allow_pe && std_line != user_line {
             return Ok(Comparision::PE);
         }
     }
