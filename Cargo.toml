@@ -3,5 +3,6 @@
 members = [
     "wa-monitor",
     "wa-server",
-    "wa-interact"
+    "wa-interact",
+    "wa-compare"
 ]
