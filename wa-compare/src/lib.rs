@@ -1,4 +1,5 @@
 mod ascii;
+mod fast;
 mod utf8;
 
 use std::fs::File;
@@ -14,16 +15,29 @@ pub enum Comparision {
 }
 
 pub use ascii::compare_ascii;
+pub use fast::compare_fast;
 pub use utf8::compare_utf8;
 
 #[test]
 fn test_compare() {
     test_compare_utf8();
     test_compare_ascii();
+    test_compare_fast();
 }
 
 #[cfg(test)]
 macro_rules! judge {
+    (@fast $ret:expr, $std:expr,$user:expr)=>{{
+        let stdout_path = "../temp/stdout.out";
+        let userout_path = "../temp/userout.out";
+        std::fs::write(stdout_path, $std).unwrap();
+        std::fs::write(userout_path, $user).unwrap();
+        let ret = compare_fast(
+            Path::new(stdout_path),
+            Path::new(userout_path),
+        );
+        assert_eq!(ret.unwrap(), $ret);
+    }};
     (@judge $func:expr,$allow: expr, $ret:expr, $std:expr,$user:expr) => {{
         let stdout_path = "../temp/stdout.out";
         let userout_path = "../temp/userout.out";
@@ -43,7 +57,7 @@ macro_rules! judge {
     (@permissive @utf8 $ret:expr, $std:expr,$user:expr) => {
         judge!(@judge compare_utf8, true,$ret, $std, $user);
     };
-            (@strict @ascii $ret:expr, $std:expr,$user:expr) => {
+    (@strict @ascii $ret:expr, $std:expr,$user:expr) => {
         judge!(@judge compare_ascii, false, $ret, $std, $user);
     };
     (@permissive @ascii $ret:expr, $std:expr,$user:expr) => {
@@ -98,4 +112,27 @@ fn test_compare_ascii() {
     judge!(@strict @ascii AC, b" \n", b" ");
     judge!(@strict @ascii AC, b"1\n", b"1");
     judge!(@strict @ascii PE, b"1 \n", b"1");
+}
+
+#[cfg(test)]
+fn test_compare_fast() {
+    use Comparision::*;
+
+    judge!(@fast WA, b"1 2\n3 4", b"1 2\r\n3 4\n");
+    judge!(@fast WA, b"1 2 \n3 4", b"1 2 \r\n3 4 \n");
+    judge!(@fast WA, b"1 2 \n3 4", b"1 2 \r\n3 4 5\n");
+    judge!(@fast WA, b"1 2 \n3 4 5", b"1 2 \r\n3 4 \n");
+    judge!(@fast WA, b"\n", b"");
+    judge!(@fast WA, b"", b"\n");
+    judge!(@fast WA, b" \n", b" ");
+    judge!(@fast WA, b"1\n", b"1");
+    judge!(@fast WA, b"1 \n", b"1");
+
+    judge!(@fast AC, b"1 2\n3 4", b"1 2\r\n3 4");
+    judge!(@fast AC, b"1 2 \n3 4", b"1 2 \r\n3 4");
+    judge!(@fast AC, b"\n", b"\r\n");
+    judge!(@fast AC, b"", b"");
+    judge!(@fast AC, b" ", b" ");
+    judge!(@fast AC, b"1\n", b"1\n");
+    judge!(@fast AC, b"1\n\r", b"1\n\r");
 }
