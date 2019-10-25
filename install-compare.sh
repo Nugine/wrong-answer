@@ -1,0 +1,1 @@
+cargo install --path wa-compare --force

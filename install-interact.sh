@@ -1,1 +1,1 @@
-cargo install --path wa-interact --force --offline
+cargo install --path wa-interact --force

@@ -1,1 +1,1 @@
-cargo install --path wa-monitor --force --offline
+cargo install --path wa-monitor --force
