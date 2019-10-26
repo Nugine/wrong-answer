@@ -1,0 +1,18 @@
+[config]
+default_to_workspace = false
+
+[tasks.install-compare]
+script = ["cargo install --path wa-compare --force"]
+
+[tasks.install-interact]
+script = ["cargo install --path wa-interact --force"]
+
+[tasks.install-monitor]
+script = ["cargo install --path wa-monitor --force"]
+
+[tasks.install-all]
+dependencies = [
+    "install-compare",
+    "install-interact",
+    "install-monitor",
+]
