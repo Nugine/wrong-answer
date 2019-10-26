@@ -1,8 +1,8 @@
 use super::*;
 
 pub fn compare_fast(stdout_path: &Path, userout_path: &Path) -> IoResult<Comparision> {
-    let mut std_reader = BufReader::new(File::open(stdout_path)?);
-    let mut user_reader = BufReader::new(File::open(userout_path)?);
+    let mut std_reader = BufReader::with_capacity(4 * 1024 * 1024, File::open(stdout_path)?);
+    let mut user_reader = BufReader::with_capacity(4 * 1024 * 1024, File::open(userout_path)?);
 
     loop {
         let std_chunk = std_reader.fill_buf()?;
