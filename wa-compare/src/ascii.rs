@@ -4,7 +4,7 @@ pub fn compare_ascii(
     allow_pe: bool,
     stdout_path: &Path,
     userout_path: &Path,
-) -> IoResult<Comparision> {
+) -> IoResult<Comparison> {
     let mut std_reader = BufReader::new(File::open(stdout_path)?);
     let mut user_reader = BufReader::new(File::open(userout_path)?);
 
@@ -14,7 +14,7 @@ pub fn compare_ascii(
     while let Some(std_line) = next_line(&mut std_buf, &mut std_reader)? {
         let user_line = match next_line(&mut user_buf, &mut user_reader)? {
             Some(l) => l,
-            None => return Ok(Comparision::WA),
+            None => return Ok(Comparison::WA),
         };
 
         let std_parts = trim(std_line).split(u8::is_ascii_whitespace);
@@ -22,29 +22,29 @@ pub fn compare_ascii(
 
         for std_part in std_parts {
             let user_part = match user_parts.next() {
-                None => return Ok(Comparision::WA),
+                None => return Ok(Comparison::WA),
                 Some(p) => p,
             };
             if std_part != user_part {
-                return Ok(Comparision::WA);
+                return Ok(Comparison::WA);
             }
         }
         if let Some(user_part) = user_parts.next() {
             if !user_part.is_empty() {
-                return Ok(Comparision::WA);
+                return Ok(Comparison::WA);
             }
         }
         if !allow_pe && std_line != user_line {
-            return Ok(Comparision::PE);
+            return Ok(Comparison::PE);
         }
     }
     {
         if next_line(&mut user_buf, &mut user_reader)?.is_some() {
-            return Ok(Comparision::WA);
+            return Ok(Comparison::WA);
         }
     }
 
-    Ok(Comparision::AC)
+    Ok(Comparison::AC)
 }
 
 fn next_line<'a>(

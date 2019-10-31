@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use structopt::StructOpt;
-use wa_compare::{compare_ascii, compare_fast, compare_utf8, Comparision};
+use wa_compare::{compare_ascii, compare_fast, compare_utf8, Comparison};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, StructOpt)]
 enum Mode {
@@ -40,7 +40,7 @@ fn main() {
 
     let opt = Opt::from_args();
 
-    let ret: std::io::Result<Comparision> = match opt.mode {
+    let ret: std::io::Result<Comparison> = match opt.mode {
         Mode::Utf8 => compare_utf8(opt.permissive, &opt.stdout, &opt.userout),
         Mode::Ascii => compare_ascii(opt.permissive, &opt.stdout, &opt.userout),
         Mode::Fast => compare_fast(&opt.stdout, &opt.userout),

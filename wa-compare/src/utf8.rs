@@ -4,7 +4,7 @@ pub fn compare_utf8(
     allow_pe: bool,
     stdout_path: &Path,
     userout_path: &Path,
-) -> IoResult<Comparision> {
+) -> IoResult<Comparison> {
     let mut std_reader = BufReader::new(File::open(stdout_path)?);
     let mut user_reader = BufReader::new(File::open(userout_path)?);
 
@@ -21,7 +21,7 @@ pub fn compare_utf8(
         user_line.clear();
         let len = user_reader.read_line(&mut user_line)?;
         if len == 0 {
-            return Ok(Comparision::WA);
+            return Ok(Comparison::WA);
         }
 
         let std_line = trim_endline(&std_line);
@@ -31,28 +31,28 @@ pub fn compare_utf8(
         let mut user_parts = user_line.split_whitespace();
         for std_part in std_parts {
             let user_part = match user_parts.next() {
-                None => return Ok(Comparision::WA),
+                None => return Ok(Comparison::WA),
                 Some(p) => p,
             };
             if std_part != user_part {
-                return Ok(Comparision::WA);
+                return Ok(Comparison::WA);
             }
         }
         if user_parts.next().is_some() {
-            return Ok(Comparision::WA);
+            return Ok(Comparison::WA);
         }
         if !allow_pe && std_line != user_line {
-            return Ok(Comparision::PE);
+            return Ok(Comparison::PE);
         }
     }
     {
         let len = user_reader.read_line(&mut user_line)?;
         if len > 0 {
-            return Ok(Comparision::WA);
+            return Ok(Comparison::WA);
         }
     }
 
-    Ok(Comparision::AC)
+    Ok(Comparison::AC)
 }
 
 fn trim_endline(s: &str) -> &str {

@@ -3,12 +3,13 @@ mod fast;
 mod utf8;
 
 use std::fs::File;
+use std::io::Read;
 use std::io::Result as IoResult;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Comparision {
+pub enum Comparison {
     AC,
     WA,
     PE,
@@ -68,7 +69,7 @@ macro_rules! judge {
 
 #[cfg(test)]
 fn test_compare_utf8() {
-    use Comparision::*;
+    use Comparison::*;
 
     judge!(@permissive @utf8  AC, b"1 2\n3 4", b"1 2\r\n3 4\n");
     judge!(@permissive @utf8  AC, b"1 2 \n3 4", b"1 2 \r\n3 4 \n");
@@ -92,7 +93,7 @@ fn test_compare_utf8() {
 
 #[cfg(test)]
 fn test_compare_ascii() {
-    use Comparision::*;
+    use Comparison::*;
 
     judge!(@permissive @ascii  AC, b"1 2\n3 4", b"1 2\r\n3 4\n");
     judge!(@permissive @ascii  AC, b"1 2 \n3 4", b"1 2 \r\n3 4 \n");
@@ -116,7 +117,7 @@ fn test_compare_ascii() {
 
 #[cfg(test)]
 fn test_compare_fast() {
-    use Comparision::*;
+    use Comparison::*;
 
     judge!(@fast WA, b"1 2\n3 4", b"1 2\r\n3 4\n");
     judge!(@fast WA, b"1 2 \n3 4", b"1 2 \r\n3 4 \n");
@@ -127,6 +128,7 @@ fn test_compare_fast() {
     judge!(@fast WA, b" \n", b" ");
     judge!(@fast WA, b"1\n", b"1");
     judge!(@fast WA, b"1 \n", b"1");
+    judge!(@fast WA, b"1\r\n", b"1\r");
 
     judge!(@fast AC, b"1 2\n3 4", b"1 2\r\n3 4");
     judge!(@fast AC, b"1 2 \n3 4", b"1 2 \r\n3 4");
@@ -135,4 +137,7 @@ fn test_compare_fast() {
     judge!(@fast AC, b" ", b" ");
     judge!(@fast AC, b"1\n", b"1\n");
     judge!(@fast AC, b"1\n\r", b"1\n\r");
+    judge!(@fast AC, b"\r\n", b"\r\n");
+    judge!(@fast AC, b"\r\n\r\n", b"\r\n\r\n");
+    judge!(@fast AC, b"\r\n\n", b"\r\n\r\n");
 }
